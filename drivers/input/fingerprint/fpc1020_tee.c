@@ -35,6 +35,7 @@
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <linux/input.h>
+#include <linux/display_state.h>
 #include <linux/interrupt.h>
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
@@ -56,6 +57,8 @@
 #define FPC1020_RESET_HIGH1_US 100
 #define FPC1020_RESET_HIGH2_US 1250
 #define FPC_TTW_HOLD_TIME 1000
+
+#define KEY_FINGERPRINT 0x2ee
 
 struct fpc1020_data {
 	struct device *dev;
@@ -79,6 +82,7 @@ struct fpc1020_data {
 	struct input_handler input_handler;
 	bool report_key_events;
 	struct work_struct pm_work;
+	struct input_dev *input_dev;
 };
 
 enum {
@@ -435,6 +439,36 @@ static const struct attribute_group attribute_group = {
 	.attrs = attributes,
 };
 
+static int fpc1020_input_init(struct fpc1020_data * fpc1020)
+{
+	int ret;
+
+	fpc1020->input_dev = input_allocate_device();
+	if (!fpc1020->input_dev) {
+		pr_err("fingerprint input boost allocation is fucked - 1 star\n");
+		ret = -ENOMEM;
+		goto exit;
+	}
+
+	fpc1020->input_dev->name = "fpc1020";
+	fpc1020->input_dev->evbit[0] = BIT(EV_KEY);
+
+	set_bit(KEY_FINGERPRINT, fpc1020->input_dev->keybit);
+
+	ret = input_register_device(fpc1020->input_dev);
+	if (ret) {
+		pr_err("fingerprint boost input registration is fucked - fixpls\n");
+		goto err_free_dev;
+	}
+
+	return 0;
+
+err_free_dev:
+	input_free_device(fpc1020->input_dev);
+exit:
+	return ret;
+}
+
 static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 {
 	struct fpc1020_data *fpc1020 = handle;
@@ -448,6 +482,13 @@ static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 		wake_lock_timeout(&fpc1020->ttw_wl, msecs_to_jiffies(FPC_TTW_HOLD_TIME));
 
 	sysfs_notify(&fpc1020->dev->kobj, NULL, dev_attr_irq.attr.name);
+
+	if (!is_display_on()) {
+		input_report_key(fpc1020->input_dev, KEY_FINGERPRINT, 1);
+		input_sync(fpc1020->input_dev);
+		input_report_key(fpc1020->input_dev, KEY_FINGERPRINT, 0);
+		input_sync(fpc1020->input_dev);
+	}
 
 	return IRQ_HANDLED;
 }
@@ -529,6 +570,8 @@ static int fpc1020_get_fp_id_tee(struct fpc1020_data *fpc1020)
 /* -------------------------------------------------------------------- */
 static int fpc1020_tee_remove(struct platform_device *pdev)
 {
+	if (fpc1020->input_dev != NULL)
+		input_free_device(fpc1020->input_dev);
 	return 0;
 }
 
@@ -584,6 +627,10 @@ static int fpc1020_tee_probe(struct platform_device *pdev)
 		goto exit;
 
 	wake_lock_init(&fpc1020->ttw_wl, WAKE_LOCK_SUSPEND, "fpc_ttw_wl");
+	
+	rc = fpc1020_input_init(fpc1020);
+	if (rc)
+		goto exit;
 
 	irqf = IRQF_TRIGGER_RISING | IRQF_ONESHOT;
 
