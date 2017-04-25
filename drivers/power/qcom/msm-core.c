@@ -1051,11 +1051,11 @@ static int uio_init(struct platform_device *pdev)
 static int msm_core_dev_probe(struct platform_device *pdev)
 {
 	int ret = 0;
+	struct uio_info *info;
 #ifdef ENABLE_TSENS_SAMPLING
 	char *key = NULL;
 	struct device_node *node;
 	int cpu;
-	struct uio_info *info;
 #endif
 
 	if (!pdev)
@@ -1104,8 +1104,8 @@ static int msm_core_dev_probe(struct platform_device *pdev)
 	if (ret)
 		goto failed;
 
-	INIT_DEFERRABLE_WORK(&sampling_work, samplequeue_handle);
 #ifdef ENABLE_TSENS_SAMPLING
+	INIT_DEFERRABLE_WORK(&sampling_work, samplequeue_handle);
 	ret = msm_core_task_init(&pdev->dev);
 	if (ret)
 		goto failed;
