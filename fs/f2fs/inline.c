@@ -389,8 +389,8 @@ static int f2fs_move_inline_dirents(struct inode *dir, struct page *ipage,
 
 	dentry_blk = kmap_atomic(page);
 
-	make_dentry_ptr_inline(dir, &src, inline_dentry);
-	make_dentry_ptr_block(dir, &dst, dentry_blk);
+	make_dentry_ptr_inline(NULL, &src, inline_dentry);
+	make_dentry_ptr_block(NULL, &dst, dentry_blk);
 
 	/* copy data from inline dentry block to new dentry block */
 	memcpy(dst.bitmap, src.bitmap, src.nr_bitmap);
@@ -537,8 +537,8 @@ int f2fs_add_inline_entry(struct inode *dir, const struct qstr *new_name,
 	if (IS_ERR(ipage))
 		return PTR_ERR(ipage);
 
-	inline_dentry = inline_data_addr(dir, ipage);
-	make_dentry_ptr_inline(dir, &d, inline_dentry);
+	inline_dentry = inline_data_addr(page);
+	make_dentry_ptr_inline(NULL, &d, inline_dentry);
 
 	bit_pos = room_for_filename(d.bitmap, slots, d.max);
 	if (bit_pos >= d.max) {
@@ -584,8 +584,8 @@ out:
 void f2fs_delete_inline_entry(struct f2fs_dir_entry *dentry, struct page *page,
 					struct inode *dir, struct inode *inode)
 {
+	struct f2fs_inline_dentry *inline_dentry;
 	struct f2fs_dentry_ptr d;
-	void *inline_dentry;
 	int slots = GET_DENTRY_SLOTS(le16_to_cpu(dentry->name_len));
 	unsigned int bit_pos;
 	int i;
@@ -593,8 +593,8 @@ void f2fs_delete_inline_entry(struct f2fs_dir_entry *dentry, struct page *page,
 	lock_page(page);
 	f2fs_wait_on_page_writeback(page, NODE, true);
 
-	inline_dentry = inline_data_addr(dir, page);
-	make_dentry_ptr_inline(dir, &d, inline_dentry);
+	inline_dentry = inline_data_addr(page);
+	make_dentry_ptr_inline(NULL, &d, inline_dentry);
 
 	bit_pos = dentry - d.dentry;
 	for (i = 0; i < slots; i++)
@@ -615,15 +615,15 @@ bool f2fs_empty_inline_dir(struct inode *dir)
 	struct f2fs_sb_info *sbi = F2FS_I_SB(dir);
 	struct page *ipage;
 	unsigned int bit_pos = 2;
-	void *inline_dentry;
+	struct f2fs_inline_dentry *inline_dentry;
 	struct f2fs_dentry_ptr d;
 
 	ipage = get_node_page(sbi, dir->i_ino);
 	if (IS_ERR(ipage))
 		return false;
 
-	inline_dentry = inline_data_addr(dir, ipage);
-	make_dentry_ptr_inline(dir, &d, inline_dentry);
+	inline_dentry = inline_data_addr(ipage);
+	make_dentry_ptr_inline(NULL, &d, inline_dentry);
 
 	bit_pos = find_next_bit_le(d.bitmap, d.max, bit_pos);
 

@@ -549,12 +549,11 @@ static inline void make_dentry_ptr_inline(struct inode *inode,
 	int reserved_size = INLINE_RESERVED_SIZE(inode);
 
 	d->inode = inode;
-	d->max = entry_cnt;
-	d->nr_bitmap = bitmap_size;
-	d->bitmap = t;
-	d->dentry = t + bitmap_size + reserved_size;
-	d->filename = t + bitmap_size + reserved_size +
-					SIZE_OF_DIR_ENTRY * entry_cnt;
+	d->max = NR_INLINE_DENTRY;
+	d->nr_bitmap = INLINE_DENTRY_BITMAP_SIZE;
+	d->bitmap = &t->dentry_bitmap;
+	d->dentry = t->dentry;
+	d->filename = t->filename;
 }
 
 /*
