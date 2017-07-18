@@ -502,9 +502,10 @@ static inline int get_extra_isize(struct inode *inode);
 static inline int get_inline_xattr_addrs(struct inode *inode);
 #define F2FS_INLINE_XATTR_ADDRS(inode)	get_inline_xattr_addrs(inode)
 
-static inline int get_inline_reserved_size(struct inode *inode);
-#define MAX_INLINE_DATA(inode)	(sizeof(__le32) * (DEF_ADDRS_PER_INODE -\
-				get_inline_reserved_size(inode) -\
+static inline int get_extra_isize(struct inode *inode);
+#define MAX_INLINE_DATA(inode)	(sizeof(__le32) * \
+				(CUR_ADDRS_PER_INODE(inode) - \
+				DEF_INLINE_RESERVED_SIZE - \
 				F2FS_INLINE_XATTR_ADDRS))
 
 /* for inline dir */
@@ -716,7 +717,7 @@ struct f2fs_inode_info {
 	kprojid_t i_projid;		/* id for project quota */
 	int i_inline_xattr_size;	/* inline xattr size */
 
-	int i_inline_reserved;		/* reserved size in inline data */
+	int i_extra_isize;		/* size of extra space located in i_addr */
 };
 
 static inline void get_extent_info(struct extent_info *ext,
@@ -2359,7 +2360,9 @@ static inline int f2fs_has_inline_xattr(struct inode *inode)
 
 static inline unsigned int addrs_per_inode(struct inode *inode)
 {
-	return CUR_ADDRS_PER_INODE(inode) - F2FS_INLINE_XATTR_ADDRS(inode);
+	if (f2fs_has_inline_xattr(inode))
+		return CUR_ADDRS_PER_INODE(inode) - F2FS_INLINE_XATTR_ADDRS;
+	return CUR_ADDRS_PER_INODE(inode);
 }
 
 static inline void *inline_xattr_addr(struct inode *inode, struct page *page)
@@ -2418,9 +2421,9 @@ static inline bool f2fs_is_drop_cache(struct inode *inode)
 static inline void *inline_data_addr(struct inode *inode, struct page *page)
 {
 	struct f2fs_inode *ri = F2FS_INODE(page);
-	int reserved_size = get_inline_reserved_size(inode);
+	int extra_size = get_extra_isize(inode);
 
-	return (void *)&(ri->i_addr[reserved_size]);
+	return (void *)&(ri->i_addr[extra_size + DEF_INLINE_RESERVED_SIZE]);
 }
 
 static inline int f2fs_has_inline_dentry(struct inode *inode)
@@ -2547,9 +2550,6 @@ static inline int f2fs_sb_has_flexible_inline_xattr(struct super_block *sb);
 static inline int get_inline_xattr_addrs(struct inode *inode)
 {
 	return F2FS_I(inode)->i_inline_xattr_size;
-static inline int get_inline_reserved_size(struct inode *inode)
-{
-	return F2FS_I(inode)->i_inline_reserved;
 }
 
 #define get_inode_mode(i) \

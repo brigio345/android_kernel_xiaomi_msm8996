@@ -700,8 +700,6 @@ static struct inode *f2fs_alloc_inode(struct super_block *sb)
 	/* Will be used by directory only */
 	fi->i_dir_level = F2FS_SB(sb)->dir_level;
 
-	fi->i_inline_reserved = DEF_INLINE_RESERVED_SIZE;
-
 	return &fi->vfs_inode;
 }
 
@@ -1852,7 +1850,7 @@ static loff_t max_file_blocks(void)
 
 	/*
 	 * note: previously, result is equal to (DEF_ADDRS_PER_INODE -
-	 * DEFAULT_INLINE_XATTR_ADDRS), but now f2fs try to reserve more
+	 * F2FS_INLINE_XATTR_ADDRS), but now f2fs try to reserve more
 	 * space in inode.i_addr, it will be more safe to reassign
 	 * result as zero.
 	 */

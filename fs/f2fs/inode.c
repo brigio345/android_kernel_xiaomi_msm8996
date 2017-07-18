@@ -398,8 +398,6 @@ int update_inode(struct inode *inode, struct page *node_page)
 	ri->i_generation = cpu_to_le32(inode->i_generation);
 	ri->i_dir_level = F2FS_I(inode)->i_dir_level;
 
-	if (f2fs_has_extra_attr(inode)) {
-		ri->i_extra_isize = cpu_to_le16(F2FS_I(inode)->i_extra_isize);
 
 		if (f2fs_sb_has_flexible_inline_xattr(F2FS_I_SB(inode)->sb))
 			ri->i_inline_xattr_size =
@@ -415,6 +413,9 @@ int update_inode(struct inode *inode, struct page *node_page)
 			ri->i_projid = cpu_to_le32(i_projid);
 		}
 	}
+
+	if (f2fs_has_extra_attr(inode))
+		ri->i_extra_isize = cpu_to_le16(F2FS_I(inode)->i_extra_isize);
 
 	__set_inode_rdev(inode, ri);
 	set_cold_node(inode, node_page);
