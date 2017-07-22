@@ -374,6 +374,20 @@ static struct attribute *f2fs_feat_attrs[] = {
 	NULL,
 };
 
+static struct attribute *f2fs_feat_attrs[] = {
+#ifdef CONFIG_F2FS_FS_ENCRYPTION
+	ATTR_LIST(encryption),
+#endif
+#ifdef CONFIG_BLK_DEV_ZONED
+	ATTR_LIST(block_zoned),
+#endif
+	ATTR_LIST(atomic_write),
+	ATTR_LIST(extra_attr),
+	ATTR_LIST(project_quota),
+	ATTR_LIST(inode_checksum),
+	NULL,
+};
+
 static const struct sysfs_ops f2fs_attr_ops = {
 	.show	= f2fs_attr_show,
 	.store	= f2fs_attr_store,
