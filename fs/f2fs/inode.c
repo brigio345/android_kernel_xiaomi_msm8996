@@ -414,8 +414,19 @@ int update_inode(struct inode *inode, struct page *node_page)
 		}
 	}
 
-	if (f2fs_has_extra_attr(inode))
+	if (f2fs_has_extra_attr(inode)) {
 		ri->i_extra_isize = cpu_to_le16(F2FS_I(inode)->i_extra_isize);
+
+		if (f2fs_sb_has_project_quota(F2FS_I_SB(inode)->sb) &&
+			F2FS_FITS_IN_INODE(ri, F2FS_I(inode)->i_extra_isize,
+								i_projid)) {
+			projid_t i_projid;
+
+			i_projid = from_kprojid(&init_user_ns,
+						F2FS_I(inode)->i_projid);
+			ri->i_projid = cpu_to_le32(i_projid);
+		}
+	}
 
 	__set_inode_rdev(inode, ri);
 	set_cold_node(inode, node_page);

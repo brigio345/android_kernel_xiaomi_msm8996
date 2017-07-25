@@ -718,6 +718,7 @@ struct f2fs_inode_info {
 	int i_inline_xattr_size;	/* inline xattr size */
 
 	int i_extra_isize;		/* size of extra space located in i_addr */
+	kprojid_t i_projid;		/* id for project quota */
 };
 
 static inline void get_extent_info(struct extent_info *ext,
