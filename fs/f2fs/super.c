@@ -2794,9 +2794,7 @@ free_meta:
 	 * falls into an infinite loop in sync_meta_pages().
 	 */
 	truncate_inode_pages_final(META_MAPPING(sbi));
-#ifdef CONFIG_QUOTA
 free_sysfs:
-#endif
 	f2fs_unregister_sysfs(sbi);
 free_root_inode:
 	dput(sb->s_root);
