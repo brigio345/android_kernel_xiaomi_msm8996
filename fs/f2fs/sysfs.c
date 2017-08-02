@@ -186,11 +186,6 @@ static ssize_t f2fs_sbi_store(struct f2fs_attr *a,
 
 	if (!strcmp(a->attr.name, "iostat_enable") && *ui == 0)
 		f2fs_reset_iostat(sbi);
-	if (!strcmp(a->attr.name, "gc_urgent") && t == 1 && sbi->gc_thread) {
-		sbi->gc_thread->gc_wake = 1;
-		wake_up_interruptible_all(&sbi->gc_thread->gc_wait_queue_head);
-		wake_up_discard_thread(sbi, true);
-	}
 
 	return count;
 }
