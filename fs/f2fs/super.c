@@ -1492,35 +1492,6 @@ static int f2fs_quota_on_mount(struct f2fs_sb_info *sbi, int type)
 						sbi->s_jquota_fmt, type);
 }
 
-int f2fs_enable_quota_files(struct f2fs_sb_info *sbi, bool rdonly)
-{
-	int enabled = 0;
-	int i, err;
-
-	if (f2fs_sb_has_quota_ino(sbi->sb) && rdonly) {
-		err = f2fs_enable_quotas(sbi->sb);
-		if (err) {
-			f2fs_msg(sbi->sb, KERN_ERR,
-					"Cannot turn on quota_ino: %d", err);
-			return 0;
-		}
-		return 1;
-	}
-
-	for (i = 0; i < F2FS_MAXQUOTAS; i++) {
-		if (sbi->s_qf_names[i]) {
-			err = f2fs_quota_on_mount(sbi, i);
-			if (!err) {
-				enabled = 1;
-				continue;
-			}
-			f2fs_msg(sbi->sb, KERN_ERR,
-				"Cannot turn on quotas: %d on %d", err, i);
-		}
-	}
-	return enabled;
-}
-
 static int f2fs_quota_enable(struct super_block *sb, int type, int format_id,
 			     unsigned int flags)
 {
@@ -1579,6 +1550,19 @@ static int f2fs_enable_quotas(struct super_block *sb)
 		}
 	}
 	return 0;
+void f2fs_enable_quota_files(struct f2fs_sb_info *sbi)
+{
+	int i, ret;
+
+	for (i = 0; i < F2FS_MAXQUOTAS; i++) {
+		if (sbi->s_qf_names[i]) {
+			ret = f2fs_quota_on_mount(sbi, i);
+			if (ret < 0)
+				f2fs_msg(sbi->sb, KERN_ERR,
+					"Cannot turn on journaled "
+					"quota: error %d", ret);
+		}
+	}
 }
 
 static int f2fs_quota_sync(struct super_block *sb, int type)
@@ -2715,7 +2699,7 @@ try_onemore:
 	/* if there are nt orphan nodes free them */
 	err = recover_orphan_inodes(sbi);
 	if (err)
-		goto free_meta;
+		goto free_sysfs;
 
 	/* recover fsynced data */
 	if (!test_opt(sbi, DISABLE_ROLL_FORWARD)) {
@@ -2783,10 +2767,6 @@ skip_recovery:
 	return 0;
 
 free_meta:
-#ifdef CONFIG_QUOTA
-	if (f2fs_sb_has_quota_ino(sb) && !sb_rdonly(sb))
-		f2fs_quota_off_umount(sbi->sb);
-#endif
 	f2fs_sync_inode_meta(sbi);
 	/*
 	 * Some dirty meta pages can be produced by recover_orphan_inodes()
