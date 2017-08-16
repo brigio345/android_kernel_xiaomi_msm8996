@@ -1481,8 +1481,7 @@ static int issue_discard_thread(void *data)
 		if (dcc->discard_wake) {
 			dcc->discard_wake = 0;
 			if (sbi->gc_thread && sbi->gc_thread->gc_urgent)
-				init_discard_policy(&dpolicy,
-							DPOLICY_FORCE, 1);
+				mark_discard_range_all(sbi);
 		}
 
 		sb_start_intwrite(sbi->sb);
