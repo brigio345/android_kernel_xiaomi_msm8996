@@ -595,8 +595,8 @@ int f2fs_issue_flush(struct f2fs_sb_info *sbi, nid_t ino)
 		return ret;
 	}
 
-	if (atomic_inc_return(&fcc->issing_flush) == 1 || sbi->s_ndevs > 1) {
-		ret = submit_flush_wait(sbi, ino);
+	if (atomic_inc_return(&fcc->issing_flush) == 1) {
+		ret = submit_flush_wait(sbi);
 		atomic_dec(&fcc->issing_flush);
 
 		atomic_inc(&fcc->issued_flush);
