@@ -886,7 +886,7 @@ next_step:
 			start_bidx = start_bidx_of_node(nofs, inode)
 								+ ofs_in_node;
 			if (f2fs_encrypted_file(inode))
-				move_data_block(inode, start_bidx, segno, off);
+				move_encrypted_block(inode, start_bidx, segno, off);
 			else
 				move_data_page(inode, start_bidx, gc_type,
 								segno, off);
