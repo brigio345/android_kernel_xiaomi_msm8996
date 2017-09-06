@@ -1209,7 +1209,7 @@ static struct bio *f2fs_grab_bio(struct inode *inode, block_t blkaddr,
 			return ERR_CAST(ctx);
 
 		/* wait the page to be moved by cleaning */
-		f2fs_wait_on_encrypted_page_writeback(sbi, blkaddr);
+		f2fs_wait_on_block_writeback(sbi, blkaddr);
 	}
 
 	bio = bio_alloc(GFP_KERNEL, min_t(int, nr_pages, BIO_MAX_PAGES));
@@ -2038,7 +2038,7 @@ repeat:
 
 	/* wait for GCed encrypted page writeback */
 	if (f2fs_encrypted_file(inode))
-		f2fs_wait_on_encrypted_page_writeback(sbi, blkaddr);
+		f2fs_wait_on_block_writeback(sbi, blkaddr);
 
 	if (len == PAGE_SIZE || PageUptodate(page))
 		return 0;
