@@ -181,7 +181,7 @@ bool need_SSR(struct f2fs_sb_info *sbi)
 		return true;
 
 	return free_sections(sbi) <= (node_secs + 2 * dent_secs + imeta_secs +
-			SM_I(sbi)->min_ssr_sections + reserved_sections(sbi));
+						2 * reserved_sections(sbi));
 }
 
 void register_inmem_page(struct inode *inode, struct page *page)
