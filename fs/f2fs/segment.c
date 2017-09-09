@@ -1294,6 +1294,14 @@ static int __issue_discard_cmd(struct f2fs_sb_info *sbi,
 								!is_idle(sbi)) {
 				io_interrupted = true;
 				goto skip;
+			/* Hurry up to finish fstrim */
+			if (dcc->pend_list_tag[i] & P_TRIM) {
+				__submit_discard_cmd(sbi, dc);
+				issued++;
+
+				if (fatal_signal_pending(current))
+					break;
+				continue;
 			}
 
 			__submit_discard_cmd(sbi, dpolicy, dc);
@@ -1439,8 +1447,15 @@ void stop_discard_thread(struct f2fs_sb_info *sbi)
 	}
 }
 
-/* This comes from f2fs_put_super */
-bool f2fs_wait_discard_bios(struct f2fs_sb_info *sbi)
+/* This comes from f2fs_put_super and f2fs_trim_fs */
+void f2fs_wait_discard_bios(struct f2fs_sb_info *sbi)
+{
+	__issue_discard_cmd(sbi, false);
+	__drop_discard_cmd(sbi);
+	__wait_discard_cmd(sbi, false);
+}
+
+static void mark_discard_range_all(struct f2fs_sb_info *sbi)
 {
 	struct discard_cmd_control *dcc = SM_I(sbi)->dcc_info;
 	struct discard_policy dpolicy;
@@ -2501,6 +2516,9 @@ int f2fs_trim_fs(struct f2fs_sb_info *sbi, struct fstrim_range *range)
 	__issue_discard_cmd_range(sbi, &dpolicy, start_block, end_block);
 	trimmed = __wait_discard_cmd_range(sbi, &dpolicy,
 					start_block, end_block);
+	/* It's time to issue all the filed discards */
+	mark_discard_range_all(sbi);
+	f2fs_wait_discard_bios(sbi);
 out:
 	range->len = F2FS_BLK_TO_BYTES(trimmed);
 	return err;
