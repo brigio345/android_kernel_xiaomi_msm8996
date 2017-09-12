@@ -1216,10 +1216,9 @@ static void __issue_discard_cmd_range(struct f2fs_sb_info *sbi,
 	struct rb_node **insert_p = NULL, *insert_parent = NULL;
 	struct discard_cmd *dc;
 	struct blk_plug plug;
-	int issued;
-
-next:
-	issued = 0;
+	int iter = 0, issued = 0;
+	int i;
+	bool io_interrupted = false;
 
 	mutex_lock(&dcc->cmd_lock);
 	f2fs_bug_on(sbi, !__check_rb_tree_consistence(sbi, &dcc->root));
@@ -1304,11 +1303,21 @@ static int __issue_discard_cmd(struct f2fs_sb_info *sbi,
 				continue;
 			}
 
-			__submit_discard_cmd(sbi, dpolicy, dc);
-			issued++;
-skip:
-			if (++iter >= dpolicy->max_requests)
-				break;
+			if (!issue_cond) {
+				__submit_discard_cmd(sbi, dc);
+				issued++;
+				continue;
+			}
+
+			if (is_idle(sbi)) {
+				__submit_discard_cmd(sbi, dc);
+				issued++;
+			} else {
+				io_interrupted = true;
+			}
+
+			if (++iter >= DISCARD_ISSUE_RATE)
+				goto out;
 		}
 		blk_finish_plug(&plug);
 		mutex_unlock(&dcc->cmd_lock);
@@ -1316,6 +1325,9 @@ skip:
 		if (iter >= dpolicy->max_requests)
 			break;
 	}
+
+	if (!issued && io_interrupted)
+		issued = -1;
 
 	if (!issued && io_interrupted)
 		issued = -1;
