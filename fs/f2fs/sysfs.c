@@ -178,16 +178,6 @@ static ssize_t f2fs_sbi_store(struct f2fs_attr *a,
 			return -EINVAL;
 		if (t == *ui)
 			return count;
-
-		mutex_lock(&dcc->cmd_lock);
-		for (i = 0; i < MAX_PLIST_NUM; i++) {
-			if (i >= t - 1)
-				dcc->pend_list_tag[i] |= P_ACTIVE;
-			else
-				dcc->pend_list_tag[i] &= (~P_ACTIVE);
-		}
-		mutex_unlock(&dcc->cmd_lock);
-
 		*ui = t;
 		return count;
 	}
@@ -395,6 +385,8 @@ static struct attribute *f2fs_feat_attrs[] = {
 	ATTR_LIST(extra_attr),
 	ATTR_LIST(project_quota),
 	ATTR_LIST(inode_checksum),
+	ATTR_LIST(flexible_inline_xattr),
+	ATTR_LIST(quota_ino),
 	NULL,
 };
 

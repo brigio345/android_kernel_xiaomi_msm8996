@@ -501,12 +501,10 @@ struct f2fs_flush_device {
 static inline int get_extra_isize(struct inode *inode);
 static inline int get_inline_xattr_addrs(struct inode *inode);
 #define F2FS_INLINE_XATTR_ADDRS(inode)	get_inline_xattr_addrs(inode)
-
-static inline int get_extra_isize(struct inode *inode);
-#define MAX_INLINE_DATA(inode)	(sizeof(__le32) * \
-				(CUR_ADDRS_PER_INODE(inode) - \
-				DEF_INLINE_RESERVED_SIZE - \
-				F2FS_INLINE_XATTR_ADDRS))
+#define MAX_INLINE_DATA(inode)	(sizeof(__le32) *			\
+				(CUR_ADDRS_PER_INODE(inode) -		\
+				F2FS_INLINE_XATTR_ADDRS(inode) -	\
+				DEF_INLINE_RESERVED_SIZE))
 
 /* for inline dir */
 #define NR_INLINE_DENTRY(inode)	(MAX_INLINE_DATA(inode) * BITS_PER_BYTE / \
@@ -2361,9 +2359,7 @@ static inline int f2fs_has_inline_xattr(struct inode *inode)
 
 static inline unsigned int addrs_per_inode(struct inode *inode)
 {
-	if (f2fs_has_inline_xattr(inode))
-		return CUR_ADDRS_PER_INODE(inode) - F2FS_INLINE_XATTR_ADDRS;
-	return CUR_ADDRS_PER_INODE(inode);
+	return CUR_ADDRS_PER_INODE(inode) - F2FS_INLINE_XATTR_ADDRS(inode);
 }
 
 static inline void *inline_xattr_addr(struct inode *inode, struct page *page)
@@ -2681,7 +2677,7 @@ static inline int f2fs_add_link(struct dentry *dentry, struct inode *inode)
  */
 int f2fs_inode_dirtied(struct inode *inode, bool sync);
 void f2fs_inode_synced(struct inode *inode);
-void f2fs_enable_quota_files(struct f2fs_sb_info *sbi);
+int f2fs_enable_quota_files(struct f2fs_sb_info *sbi, bool rdonly);
 void f2fs_quota_off_umount(struct super_block *sb);
 int f2fs_commit_super(struct f2fs_sb_info *sbi, bool recover);
 int f2fs_sync_fs(struct super_block *sb, int sync);
@@ -2759,7 +2755,7 @@ bool is_checkpointed_data(struct f2fs_sb_info *sbi, block_t blkaddr);
 void init_discard_policy(struct discard_policy *dpolicy, int discard_type,
 						unsigned int granularity);
 void stop_discard_thread(struct f2fs_sb_info *sbi);
-void f2fs_wait_discard_bios(struct f2fs_sb_info *sbi, bool umount);
+bool f2fs_wait_discard_bios(struct f2fs_sb_info *sbi);
 void clear_prefree_segments(struct f2fs_sb_info *sbi, struct cp_control *cpc);
 void release_discard_addrs(struct f2fs_sb_info *sbi);
 int npages_for_summary_flush(struct f2fs_sb_info *sbi, bool for_ra);

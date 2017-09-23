@@ -473,7 +473,7 @@ static struct bio *f2fs_grab_read_bio(struct inode *inode, block_t blkaddr,
 		f2fs_wait_on_block_writeback(sbi, blkaddr);
 	}
 
-	bio = bio_alloc(GFP_KERNEL, min_t(int, nr_pages, BIO_MAX_PAGES));
+	bio = f2fs_bio_alloc(sbi, min_t(int, nr_pages, BIO_MAX_PAGES), false);
 	if (!bio) {
 		if (ctx)
 			fscrypt_release_ctx(ctx);

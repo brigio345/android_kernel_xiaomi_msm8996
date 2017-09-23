@@ -181,7 +181,7 @@ bool need_SSR(struct f2fs_sb_info *sbi)
 		return true;
 
 	return free_sections(sbi) <= (node_secs + 2 * dent_secs + imeta_secs +
-						2 * reserved_sections(sbi));
+			SM_I(sbi)->min_ssr_sections + reserved_sections(sbi));
 }
 
 void register_inmem_page(struct inode *inode, struct page *page)
@@ -595,8 +595,8 @@ int f2fs_issue_flush(struct f2fs_sb_info *sbi, nid_t ino)
 		return ret;
 	}
 
-	if (atomic_inc_return(&fcc->issing_flush) == 1) {
-		ret = submit_flush_wait(sbi);
+	if (atomic_inc_return(&fcc->issing_flush) == 1 || sbi->s_ndevs > 1) {
+		ret = submit_flush_wait(sbi, ino);
 		atomic_dec(&fcc->issing_flush);
 
 		atomic_inc(&fcc->issued_flush);
@@ -627,7 +627,7 @@ int f2fs_issue_flush(struct f2fs_sb_info *sbi, nid_t ino)
 		} else {
 			struct flush_cmd *tmp, *next;
 
-			ret = submit_flush_wait(sbi);
+			ret = submit_flush_wait(sbi, ino);
 
 			llist_for_each_entry_safe(tmp, next, list, llnode) {
 				if (tmp == &cmd) {
@@ -1216,8 +1216,68 @@ static void __issue_discard_cmd_range(struct f2fs_sb_info *sbi,
 	struct rb_node **insert_p = NULL, *insert_parent = NULL;
 	struct discard_cmd *dc;
 	struct blk_plug plug;
-	int iter = 0, issued = 0;
-	int i;
+	int issued;
+
+next:
+	issued = 0;
+
+	mutex_lock(&dcc->cmd_lock);
+	f2fs_bug_on(sbi, !__check_rb_tree_consistence(sbi, &dcc->root));
+
+	dc = (struct discard_cmd *)__lookup_rb_tree_ret(&dcc->root,
+					NULL, start,
+					(struct rb_entry **)&prev_dc,
+					(struct rb_entry **)&next_dc,
+					&insert_p, &insert_parent, true);
+	if (!dc)
+		dc = next_dc;
+
+	blk_start_plug(&plug);
+
+	while (dc && dc->lstart <= end) {
+		struct rb_node *node;
+
+		if (dc->len < dpolicy->granularity)
+			goto skip;
+
+		if (dc->state != D_PREP) {
+			list_move_tail(&dc->list, &dcc->fstrim_list);
+			goto skip;
+		}
+
+		__submit_discard_cmd(sbi, dpolicy, dc);
+
+		if (++issued >= dpolicy->max_requests) {
+			start = dc->lstart + dc->len;
+
+			blk_finish_plug(&plug);
+			mutex_unlock(&dcc->cmd_lock);
+
+			schedule();
+
+			goto next;
+		}
+skip:
+		node = rb_next(&dc->rb_node);
+		dc = rb_entry_safe(node, struct discard_cmd, rb_node);
+
+		if (fatal_signal_pending(current))
+			break;
+	}
+
+	blk_finish_plug(&plug);
+	mutex_unlock(&dcc->cmd_lock);
+}
+
+static int __issue_discard_cmd(struct f2fs_sb_info *sbi,
+					struct discard_policy *dpolicy)
+{
+	struct discard_cmd_control *dcc = SM_I(sbi)->dcc_info;
+	struct discard_cmd *prev_dc = NULL, *next_dc = NULL;
+	struct rb_node **insert_p = NULL, *insert_parent = NULL;
+	struct discard_cmd *dc;
+	struct blk_plug plug;
+	int i, iter = 0, issued = 0;
 	bool io_interrupted = false;
 
 	mutex_lock(&dcc->cmd_lock);
@@ -1314,10 +1374,14 @@ static int __issue_discard_cmd(struct f2fs_sb_info *sbi,
 				issued++;
 			} else {
 				io_interrupted = true;
+				goto skip;
 			}
 
-			if (++iter >= DISCARD_ISSUE_RATE)
-				goto out;
+			__submit_discard_cmd(sbi, dpolicy, dc);
+			issued++;
+skip:
+			if (++iter >= dpolicy->max_requests)
+				break;
 		}
 		blk_finish_plug(&plug);
 		mutex_unlock(&dcc->cmd_lock);
@@ -1326,8 +1390,6 @@ static int __issue_discard_cmd(struct f2fs_sb_info *sbi,
 			break;
 	}
 
-	if (!issued && io_interrupted)
-		issued = -1;
 
 	if (!issued && io_interrupted)
 		issued = -1;
@@ -1459,15 +1521,8 @@ void stop_discard_thread(struct f2fs_sb_info *sbi)
 	}
 }
 
-/* This comes from f2fs_put_super and f2fs_trim_fs */
-void f2fs_wait_discard_bios(struct f2fs_sb_info *sbi, bool umount)
-{
-	__issue_discard_cmd(sbi, false);
-	__drop_discard_cmd(sbi);
-	__wait_discard_cmd(sbi, !umount);
-}
-
-static void mark_discard_range_all(struct f2fs_sb_info *sbi)
+/* This comes from f2fs_put_super */
+bool f2fs_wait_discard_bios(struct f2fs_sb_info *sbi)
 {
 	struct discard_cmd_control *dcc = SM_I(sbi)->dcc_info;
 	struct discard_policy dpolicy;
@@ -1508,7 +1563,8 @@ static int issue_discard_thread(void *data)
 		if (dcc->discard_wake) {
 			dcc->discard_wake = 0;
 			if (sbi->gc_thread && sbi->gc_thread->gc_urgent)
-				mark_discard_range_all(sbi);
+				init_discard_policy(&dpolicy,
+							DPOLICY_FORCE, 1);
 		}
 
 		sb_start_intwrite(sbi->sb);
@@ -2798,6 +2854,8 @@ int rewrite_data_page(struct f2fs_io_info *fio)
 	stat_inc_inplace_blocks(fio->sbi);
 
 	err = f2fs_submit_page_bio(fio);
+	if (!err)
+		update_device_state(fio);
 
 	f2fs_update_iostat(fio->sbi, fio->io_type, F2FS_BLKSIZE);
 

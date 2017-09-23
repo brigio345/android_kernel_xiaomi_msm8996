@@ -417,6 +417,10 @@ int update_inode(struct inode *inode, struct page *node_page)
 	if (f2fs_has_extra_attr(inode)) {
 		ri->i_extra_isize = cpu_to_le16(F2FS_I(inode)->i_extra_isize);
 
+		if (f2fs_sb_has_flexible_inline_xattr(F2FS_I_SB(inode)->sb))
+			ri->i_inline_xattr_size =
+				cpu_to_le16(F2FS_I(inode)->i_inline_xattr_size);
+
 		if (f2fs_sb_has_project_quota(F2FS_I_SB(inode)->sb) &&
 			F2FS_FITS_IN_INODE(ri, F2FS_I(inode)->i_extra_isize,
 								i_projid)) {
@@ -553,8 +557,10 @@ no_delete:
 	stat_dec_inline_dir(inode);
 	stat_dec_inline_inode(inode);
 
-	if (!is_set_ckpt_flags(sbi, CP_ERROR_FLAG))
+	if (likely(!is_set_ckpt_flags(sbi, CP_ERROR_FLAG)))
 		f2fs_bug_on(sbi, is_inode_flag_set(inode, FI_DIRTY_INODE));
+	else
+		f2fs_inode_synced(inode);
 
 	/* ino == 0, if f2fs_new_inode() was failed t*/
 	if (inode->i_ino)

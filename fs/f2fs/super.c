@@ -862,7 +862,7 @@ static void f2fs_put_super(struct super_block *sb)
 	}
 
 	/* be sure to wait for any on-going discard commands */
-	f2fs_wait_discard_bios(sbi, true);
+	dropped = f2fs_wait_discard_bios(sbi);
 
 	if (f2fs_discard_en(sbi) && !sbi->discard_blks && !dropped) {
 		struct cp_control cpc = {
@@ -1474,8 +1474,7 @@ retry:
 	}
 
 	if (len == towrite)
-		return 0;
-	inode->i_version++;
+		return err;
 	inode->i_mtime = inode->i_ctime = current_time(inode);
 	f2fs_mark_inode_dirty_sync(inode, false);
 	return len - towrite;
@@ -1550,19 +1549,93 @@ static int f2fs_enable_quotas(struct super_block *sb)
 		}
 	}
 	return 0;
-void f2fs_enable_quota_files(struct f2fs_sb_info *sbi)
+int f2fs_enable_quota_files(struct f2fs_sb_info *sbi, bool rdonly)
 {
-	int i, ret;
+	int enabled = 0;
+	int i, err;
+
+	if (f2fs_sb_has_quota_ino(sbi->sb) && rdonly) {
+		err = f2fs_enable_quotas(sbi->sb);
+		if (err) {
+			f2fs_msg(sbi->sb, KERN_ERR,
+					"Cannot turn on quota_ino: %d", err);
+			return 0;
+		}
+		return 1;
+	}
 
 	for (i = 0; i < F2FS_MAXQUOTAS; i++) {
 		if (sbi->s_qf_names[i]) {
-			ret = f2fs_quota_on_mount(sbi, i);
-			if (ret < 0)
-				f2fs_msg(sbi->sb, KERN_ERR,
-					"Cannot turn on journaled "
-					"quota: error %d", ret);
+			err = f2fs_quota_on_mount(sbi, i);
+			if (!err) {
+				enabled = 1;
+				continue;
+			}
+			f2fs_msg(sbi->sb, KERN_ERR,
+				"Cannot turn on quotas: %d on %d", err, i);
 		}
 	}
+	return enabled;
+}
+
+static int f2fs_quota_enable(struct super_block *sb, int type, int format_id,
+			     unsigned int flags)
+{
+	struct inode *qf_inode;
+	unsigned long qf_inum;
+	int err;
+
+	BUG_ON(!f2fs_sb_has_quota_ino(sb));
+
+	qf_inum = f2fs_qf_ino(sb, type);
+	if (!qf_inum)
+		return -EPERM;
+
+	qf_inode = f2fs_iget(sb, qf_inum);
+	if (IS_ERR(qf_inode)) {
+		f2fs_msg(sb, KERN_ERR,
+			"Bad quota inode %u:%lu", type, qf_inum);
+		return PTR_ERR(qf_inode);
+	}
+
+	/* Don't account quota for quota files to avoid recursion */
+	qf_inode->i_flags |= S_NOQUOTA;
+	err = dquot_enable(qf_inode, type, format_id, flags);
+	iput(qf_inode);
+	return err;
+}
+
+static int f2fs_enable_quotas(struct super_block *sb)
+{
+	int type, err = 0;
+	unsigned long qf_inum;
+	bool quota_mopt[MAXQUOTAS] = {
+		test_opt(F2FS_SB(sb), USRQUOTA),
+		test_opt(F2FS_SB(sb), GRPQUOTA),
+#if 0	/* not support */
+		test_opt(F2FS_SB(sb), PRJQUOTA),
+#endif
+	};
+
+	sb_dqopt(sb)->flags |= DQUOT_QUOTA_SYS_FILE;
+	for (type = 0; type < MAXQUOTAS; type++) {
+		qf_inum = f2fs_qf_ino(sb, type);
+		if (qf_inum) {
+			err = f2fs_quota_enable(sb, type, QFMT_VFS_V1,
+				DQUOT_USAGE_ENABLED |
+				(quota_mopt[type] ? DQUOT_LIMITS_ENABLED : 0));
+			if (err) {
+				f2fs_msg(sb, KERN_ERR,
+					"Failed to enable quota tracking "
+					"(type=%d, err=%d). Please run "
+					"fsck to fix.", type, err);
+				for (type--; type >= 0; type--)
+					dquot_quota_off(sb, type);
+				return err;
+			}
+		}
+	}
+	return 0;
 }
 
 static int f2fs_quota_sync(struct super_block *sb, int type)
@@ -1835,7 +1908,7 @@ static loff_t max_file_blocks(void)
 
 	/*
 	 * note: previously, result is equal to (DEF_ADDRS_PER_INODE -
-	 * F2FS_INLINE_XATTR_ADDRS), but now f2fs try to reserve more
+	 * DEFAULT_INLINE_XATTR_ADDRS), but now f2fs try to reserve more
 	 * space in inode.i_addr, it will be more safe to reassign
 	 * result as zero.
 	 */
@@ -2509,7 +2582,10 @@ try_onemore:
 
 #ifdef CONFIG_QUOTA
 	sb->dq_op = &f2fs_quota_operations;
-	sb->s_qcop = &f2fs_quotactl_ops;
+	if (f2fs_sb_has_quota_ino(sb))
+		sb->s_qcop = &f2fs_quotactl_sysfile_ops;
+	else
+		sb->s_qcop = &f2fs_quotactl_ops;
 #if 0	/* not support */
 	sb->s_quota_types = QTYPE_MASK_USR | QTYPE_MASK_GRP | QTYPE_MASK_PRJ;
 #endif
@@ -2699,7 +2775,7 @@ try_onemore:
 	/* if there are nt orphan nodes free them */
 	err = recover_orphan_inodes(sbi);
 	if (err)
-		goto free_sysfs;
+		goto free_meta;
 
 	/* recover fsynced data */
 	if (!test_opt(sbi, DISABLE_ROLL_FORWARD)) {
@@ -2767,6 +2843,10 @@ skip_recovery:
 	return 0;
 
 free_meta:
+#ifdef CONFIG_QUOTA
+	if (f2fs_sb_has_quota_ino(sb) && !sb_rdonly(sb))
+		f2fs_quota_off_umount(sbi->sb);
+#endif
 	f2fs_sync_inode_meta(sbi);
 	/*
 	 * Some dirty meta pages can be produced by recover_orphan_inodes()
@@ -2775,7 +2855,9 @@ free_meta:
 	 * falls into an infinite loop in sync_meta_pages().
 	 */
 	truncate_inode_pages_final(META_MAPPING(sbi));
+#ifdef CONFIG_QUOTA
 free_sysfs:
+#endif
 	f2fs_unregister_sysfs(sbi);
 free_root_inode:
 	dput(sb->s_root);
