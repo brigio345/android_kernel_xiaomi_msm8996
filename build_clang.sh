@@ -11,8 +11,8 @@ export CROSS_COMPILE="${HOME}/Android_kernel/gcc-linaro-7.2.1-2017.11-x86_64_aar
 export CLANG_TCHAIN="${HOME}/Android_kernel/clang/clang-4579689/bin/clang"
 export objdir="${HOME}/Android_kernel/out_clang"
 
-make ARCH="arm64" O=$objdir $CONFIG_FILE -j8
+make ARCH="arm64" O=$objdir $CONFIG_FILE -j4
 
-make CC="${CLANG_TCHAIN}" O=$objdir -j8 Image.gz-dtb
+make CC="${CLANG_TCHAIN}" O=$objdir -j4 Image.gz-dtb
 
 cd ${kernel_dir}
