@@ -440,9 +440,6 @@ asmlinkage void __exception do_sysinstr(unsigned int esr, struct pt_regs *regs)
 	} else if ((esr & ESR_ELx_SYS64_ISS_SYS_OP_MASK) == ESR_ELx_SYS64_ISS_SYS_CNTFRQ) {
 		cntfrq_read_handler(esr, regs);
 		return;
-	} else if ((esr & ESR_ELx_SYS64_ISS_SYS_OP_MASK) == ESR_ELx_SYS64_ISS_SYS_CNTPCT) {
-		cntpct_read_handler(esr, regs);
-		return;
 	}
 
 	do_undefinstr(regs);
