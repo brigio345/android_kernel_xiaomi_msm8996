@@ -5,5 +5,5 @@ export LOCALVERSION=""
 
 mkdir -p ../out_linaro
 
-make -C $(pwd) O=$(pwd)/../out_linaro capricorn_defconfig
-make -C $(pwd) O=$(pwd)/../out_linaro
+make -C $(pwd) O=$(pwd)/../out_linaro capricorn_defconfig -j8
+make -C $(pwd) O=$(pwd)/../out_linaro -j8 Image.gz-dtb
