@@ -1549,6 +1549,8 @@ static int f2fs_enable_quotas(struct super_block *sb)
 		}
 	}
 	return 0;
+}
+
 int f2fs_enable_quota_files(struct f2fs_sb_info *sbi, bool rdonly)
 {
 	int enabled = 0;
@@ -1576,66 +1578,6 @@ int f2fs_enable_quota_files(struct f2fs_sb_info *sbi, bool rdonly)
 		}
 	}
 	return enabled;
-}
-
-static int f2fs_quota_enable(struct super_block *sb, int type, int format_id,
-			     unsigned int flags)
-{
-	struct inode *qf_inode;
-	unsigned long qf_inum;
-	int err;
-
-	BUG_ON(!f2fs_sb_has_quota_ino(sb));
-
-	qf_inum = f2fs_qf_ino(sb, type);
-	if (!qf_inum)
-		return -EPERM;
-
-	qf_inode = f2fs_iget(sb, qf_inum);
-	if (IS_ERR(qf_inode)) {
-		f2fs_msg(sb, KERN_ERR,
-			"Bad quota inode %u:%lu", type, qf_inum);
-		return PTR_ERR(qf_inode);
-	}
-
-	/* Don't account quota for quota files to avoid recursion */
-	qf_inode->i_flags |= S_NOQUOTA;
-	err = dquot_enable(qf_inode, type, format_id, flags);
-	iput(qf_inode);
-	return err;
-}
-
-static int f2fs_enable_quotas(struct super_block *sb)
-{
-	int type, err = 0;
-	unsigned long qf_inum;
-	bool quota_mopt[MAXQUOTAS] = {
-		test_opt(F2FS_SB(sb), USRQUOTA),
-		test_opt(F2FS_SB(sb), GRPQUOTA),
-#if 0	/* not support */
-		test_opt(F2FS_SB(sb), PRJQUOTA),
-#endif
-	};
-
-	sb_dqopt(sb)->flags |= DQUOT_QUOTA_SYS_FILE;
-	for (type = 0; type < MAXQUOTAS; type++) {
-		qf_inum = f2fs_qf_ino(sb, type);
-		if (qf_inum) {
-			err = f2fs_quota_enable(sb, type, QFMT_VFS_V1,
-				DQUOT_USAGE_ENABLED |
-				(quota_mopt[type] ? DQUOT_LIMITS_ENABLED : 0));
-			if (err) {
-				f2fs_msg(sb, KERN_ERR,
-					"Failed to enable quota tracking "
-					"(type=%d, err=%d). Please run "
-					"fsck to fix.", type, err);
-				for (type--; type >= 0; type--)
-					dquot_quota_off(sb, type);
-				return err;
-			}
-		}
-	}
-	return 0;
 }
 
 static int f2fs_quota_sync(struct super_block *sb, int type)

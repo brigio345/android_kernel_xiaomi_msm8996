@@ -1273,65 +1273,6 @@ static int __issue_discard_cmd(struct f2fs_sb_info *sbi,
 					struct discard_policy *dpolicy)
 {
 	struct discard_cmd_control *dcc = SM_I(sbi)->dcc_info;
-	struct discard_cmd *prev_dc = NULL, *next_dc = NULL;
-	struct rb_node **insert_p = NULL, *insert_parent = NULL;
-	struct discard_cmd *dc;
-	struct blk_plug plug;
-	int i, iter = 0, issued = 0;
-	bool io_interrupted = false;
-
-	mutex_lock(&dcc->cmd_lock);
-	f2fs_bug_on(sbi, !__check_rb_tree_consistence(sbi, &dcc->root));
-
-	dc = (struct discard_cmd *)__lookup_rb_tree_ret(&dcc->root,
-					NULL, start,
-					(struct rb_entry **)&prev_dc,
-					(struct rb_entry **)&next_dc,
-					&insert_p, &insert_parent, true);
-	if (!dc)
-		dc = next_dc;
-
-	blk_start_plug(&plug);
-
-	while (dc && dc->lstart <= end) {
-		struct rb_node *node;
-
-		if (dc->len < dpolicy->granularity)
-			goto skip;
-
-		if (dc->state != D_PREP) {
-			list_move_tail(&dc->list, &dcc->fstrim_list);
-			goto skip;
-		}
-
-		__submit_discard_cmd(sbi, dpolicy, dc);
-
-		if (++issued >= dpolicy->max_requests) {
-			start = dc->lstart + dc->len;
-
-			blk_finish_plug(&plug);
-			mutex_unlock(&dcc->cmd_lock);
-
-			schedule();
-
-			goto next;
-		}
-skip:
-		node = rb_next(&dc->rb_node);
-		dc = rb_entry_safe(node, struct discard_cmd, rb_node);
-
-		if (fatal_signal_pending(current))
-			break;
-	}
-
-	blk_finish_plug(&plug);
-	mutex_unlock(&dcc->cmd_lock);
-}
-
-static int __issue_discard_cmd(struct f2fs_sb_info *sbi,
-					struct discard_policy *dpolicy)
-{
-	struct discard_cmd_control *dcc = SM_I(sbi)->dcc_info;
 	struct list_head *pend_list;
 	struct discard_cmd *dc, *tmp;
 	struct blk_plug plug;
@@ -1351,28 +1292,6 @@ static int __issue_discard_cmd(struct f2fs_sb_info *sbi,
 
 			if (dpolicy->io_aware && i < dpolicy->io_aware_gran &&
 								!is_idle(sbi)) {
-				io_interrupted = true;
-				goto skip;
-			/* Hurry up to finish fstrim */
-			if (dcc->pend_list_tag[i] & P_TRIM) {
-				__submit_discard_cmd(sbi, dc);
-				issued++;
-
-				if (fatal_signal_pending(current))
-					break;
-				continue;
-			}
-
-			if (!issue_cond) {
-				__submit_discard_cmd(sbi, dc);
-				issued++;
-				continue;
-			}
-
-			if (is_idle(sbi)) {
-				__submit_discard_cmd(sbi, dc);
-				issued++;
-			} else {
 				io_interrupted = true;
 				goto skip;
 			}
@@ -2584,9 +2503,6 @@ int f2fs_trim_fs(struct f2fs_sb_info *sbi, struct fstrim_range *range)
 	__issue_discard_cmd_range(sbi, &dpolicy, start_block, end_block);
 	trimmed = __wait_discard_cmd_range(sbi, &dpolicy,
 					start_block, end_block);
-	/* It's time to issue all the filed discards */
-	mark_discard_range_all(sbi);
-	f2fs_wait_discard_bios(sbi, false);
 out:
 	range->len = F2FS_BLK_TO_BYTES(trimmed);
 	return err;
