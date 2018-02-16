@@ -1,7 +1,7 @@
 export ARCH=arm64
 export CROSS_COMPILE=~/Android_kernel/gcc-linaro-7.2.1-2017.11-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
 export KBUILD_BUILD_USER="brigio345"
-export LOCALVERSION=""
+export LOCALVERSION="BG345-1.0"
 
 mkdir -p ../out_linaro
 
