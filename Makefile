@@ -422,7 +422,7 @@ KBUILD_CFLAGS   := -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
-		   -std=gnu89 $(CLANG_FLAGS) -w
+		   -std=gnu89 $(CLANG_FLAGS) 
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
@@ -635,7 +635,6 @@ all: vmlinux
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
-KBUILD_CFLAGS	+= $(call cc-option,-fno-delete-null-pointer-checks,)
 KBUILD_CFLAGS	+= $(call cc-disable-warning,frame-address,)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, format-truncation)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, format-overflow)
@@ -726,7 +725,6 @@ KBUILD_CFLAGS += -fno-builtin
 
 # Quiet clang warning: comparison of unsigned expression < 0 is always false
 
-KBUILD_CFLAGS += $(call cc-disable-warning, tautological-compare)
 # CLANG uses a _MergedGlobals as optimization, but this breaks modpost, as the
 # source of a reference will be _MergedGlobals and not on of the whitelisted names.
 # See modpost pattern 2
@@ -735,7 +733,6 @@ KBUILD_CFLAGS += $(call cc-option, -no-integrated-as)
 KBUILD_AFLAGS += $(call cc-option, -no-integrated-as)
 else
 
-KBUILD_CFLAGS += $(call cc-option,-fno-delete-null-pointer-checks,)
 # This warning generated too much noise in a regular build.
 # Use make W=1 to enable this warning (see scripts/Makefile.build)
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
