@@ -2624,8 +2624,7 @@ static void wma_vdev_stats_lost_link_helper(tp_wma_handle wma,
 		if ((bcn_snr != WMA_TGT_INVALID_SNR_OLD) &&
 			(bcn_snr != WMA_TGT_INVALID_SNR_NEW))
 			rssi = bcn_snr;
-		else if ((dat_snr != WMA_TGT_INVALID_SNR_OLD) &&
-				(dat_snr != WMA_TGT_INVALID_SNR_NEW))
+		else if (dat_snr != WMA_TGT_INVALID_SNR_OLD)
 			rssi = dat_snr;
 		else
 			rssi = WMA_TGT_INVALID_SNR_OLD;
@@ -2686,10 +2685,8 @@ static void wma_update_vdev_stats(tp_wma_handle wma,
 
 	if (pGetRssiReq &&
 		pGetRssiReq->sessionId == vdev_stats->vdev_id) {
-		if ((bcn_snr == WMA_TGT_INVALID_SNR_OLD ||
-			bcn_snr == WMA_TGT_INVALID_SNR_NEW) &&
-			(dat_snr == WMA_TGT_INVALID_SNR_OLD ||
-			 dat_snr == WMA_TGT_INVALID_SNR_NEW)) {
+		if (bcn_snr == WMA_TGT_INVALID_SNR_OLD &&
+			dat_snr == WMA_TGT_INVALID_SNR_OLD) {
 			/*
 			 * Firmware sends invalid snr till it sees
 			 * Beacon/Data after connection since after
@@ -2730,11 +2727,9 @@ static void wma_update_vdev_stats(tp_wma_handle wma,
 	if (node->psnr_req) {
 		tAniGetSnrReq *p_snr_req = node->psnr_req;
 
-		if ((bcn_snr != WMA_TGT_INVALID_SNR_OLD) &&
-			(bcn_snr != WMA_TGT_INVALID_SNR_NEW))
+		if (bcn_snr != WMA_TGT_INVALID_SNR_OLD)
 			p_snr_req->snr = bcn_snr;
-		else if ((dat_snr != WMA_TGT_INVALID_SNR_OLD) &&
-				(dat_snr != WMA_TGT_INVALID_SNR_NEW))
+		else if (dat_snr != WMA_TGT_INVALID_SNR_OLD)
 			p_snr_req->snr = dat_snr;
 		else
 			p_snr_req->snr = WMA_TGT_INVALID_SNR_OLD;
@@ -2865,8 +2860,7 @@ static void wma_update_per_chain_rssi_stats(tp_wma_handle wma,
 		if ((dat_snr != WMA_TGT_INVALID_SNR_OLD &&
 			 dat_snr != WMA_TGT_INVALID_SNR_NEW))
 			rssi_per_chain_stats->rssi[i] = dat_snr;
-		else if ((bcn_snr != WMA_TGT_INVALID_SNR_OLD &&
-			      bcn_snr != WMA_TGT_INVALID_SNR_NEW))
+		else if (bcn_snr != WMA_TGT_INVALID_SNR_OLD)
 			rssi_per_chain_stats->rssi[i] = bcn_snr;
 		else
 			/*
@@ -32435,7 +32429,7 @@ static VOS_STATUS wma_update_tx_rate(tp_wma_handle wma,
 	case MODE_11G:
 	case MODE_11GONLY:
 
-		if ((tx_rate >= 0 && tx_rate <= WMI_MAX_OFDM_TX_RATE)) {
+		if (tx_rate <= WMI_MAX_OFDM_TX_RATE) {
 			/* Do Nothing*/
 		} else if (tx_rate == WMA_RESET_MAX_RATE)
 			peer_max_min_tx_rate.tx_rate = WMI_MAX_OFDM_TX_RATE;
@@ -32447,7 +32441,7 @@ static VOS_STATUS wma_update_tx_rate(tp_wma_handle wma,
 		break;
 	case MODE_11B:
 
-		if ((tx_rate >= 0 && tx_rate <= WMI_MAX_CCK_TX_RATE)) {
+		if (tx_rate <= WMI_MAX_CCK_TX_RATE) {
 			/* Do nothing*/
 		} else if (tx_rate == WMA_RESET_MAX_RATE)
 			peer_max_min_tx_rate.tx_rate = WMI_MAX_CCK_TX_RATE;
@@ -32461,7 +32455,7 @@ static VOS_STATUS wma_update_tx_rate(tp_wma_handle wma,
 	case MODE_11NG_HT20:
 	case MODE_11NA_HT40:
 	case MODE_11NG_HT40:
-		if ((tx_rate >= 0 && tx_rate <= WMI_MAX_HT_TX_MCS)) {
+		if (tx_rate <= WMI_MAX_HT_TX_MCS) {
 			/* Do nothing*/
 		} else if (tx_rate == WMA_RESET_MAX_RATE)
 			peer_max_min_tx_rate.tx_rate = WMI_MAX_HT_TX_MCS;
@@ -32480,7 +32474,7 @@ static VOS_STATUS wma_update_tx_rate(tp_wma_handle wma,
 	case MODE_11AC_VHT80_80:
 	case MODE_11AC_VHT160:
 #endif
-		if ((tx_rate >= 0 && tx_rate <= WMI_MAX_VHT_TX_MCS)) {
+		if (tx_rate <= WMI_MAX_VHT_TX_MCS) {
 			/* Do nothing*/
 		} else if (tx_rate == WMA_RESET_MAX_RATE)
 			peer_max_min_tx_rate.tx_rate = WMI_MAX_VHT_TX_MCS;
@@ -32609,12 +32603,6 @@ static VOS_STATUS wma_set_beacon_filter(tp_wma_handle wma,
 
 	vos_status = wmi_unified_cmd_send(wma->wmi_handle, wmi_buf, len,
 			WMI_ADD_BCN_FILTER_CMDID);
-	if (vos_status < 0) {
-		WMA_LOGE("Failed to send wmi add beacon filter = %d",
-				vos_status);
-		wmi_buf_free(wmi_buf);
-		return VOS_STATUS_E_FAILURE;
-	}
 
 	return vos_status;
 }
@@ -32655,12 +32643,6 @@ static VOS_STATUS wma_remove_beacon_filter(tp_wma_handle wma,
 
 	vos_status = wmi_unified_cmd_send(wma->wmi_handle, buf, len,
 			WMI_RMV_BCN_FILTER_CMDID);
-	if (vos_status < 0) {
-		WMA_LOGE("Failed to send wmi remove beacon filter = %d",
-				vos_status);
-		wmi_buf_free(buf);
-		return VOS_STATUS_E_FAILURE;
-	}
 
 	return vos_status;
 }
