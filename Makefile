@@ -719,6 +719,7 @@ KBUILD_CFLAGS += $(call cc-disable-warning, gnu)
 KBUILD_CFLAGS += $(call cc-disable-warning, pointer-bool-conversion)
 KBUILD_CFLAGS += $(call cc-disable-warning, address-of-packed-member)
 KBUILD_CFLAGS += $(call cc-disable-warning, duplicate-decl-specifier)
+KBUILD_CFLAGS += $(call cc-disable-warning, enum-conversion)
 KBUILD_CFLAGS += -Wno-asm-operand-widths
 KBUILD_CFLAGS += -Wno-initializer-overrides
 KBUILD_CFLAGS += -fno-builtin
@@ -737,6 +738,7 @@ else
 # Use make W=1 to enable this warning (see scripts/Makefile.build)
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-const-variable)
+KBUILD_CFLAGS += $(call cc-disable-warning, enum-conversion)
 endif
 
 ifdef CONFIG_FRAME_POINTER
