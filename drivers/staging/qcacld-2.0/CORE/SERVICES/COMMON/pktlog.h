@@ -25,15 +25,3 @@
  * to the Linux Foundation.
  */
 
-#ifndef _PKTLOG_
-#define _PKTLOG_
-#ifndef REMOVE_PKT_LOG
-
-/**
- * @typedef ol_pktlog_dev_handle
- * @brief opaque handle for pktlog device object
- */
-struct ol_pktlog_dev_t;
-typedef struct ol_pktlog_dev_t* ol_pktlog_dev_handle;
-#endif	/* #ifndef REMOVE_PKT_LOG */
-#endif /* _PKTLOG_ */
