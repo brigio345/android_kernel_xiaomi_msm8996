@@ -408,7 +408,7 @@ static inline void kernfs_init(void) { }
 #endif	/* CONFIG_KERNFS */
 
 static inline struct kernfs_node *
-kernfs_find_and_get(struct kernfs_node *kn, const char *name)
+kernfs_find_and_get(struct kernfs_node *kn, const unsigned char *name)
 {
 	return kernfs_find_and_get_ns(kn, name, NULL);
 }
