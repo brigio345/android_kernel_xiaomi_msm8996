@@ -2621,8 +2621,7 @@ static void wma_vdev_stats_lost_link_helper(tp_wma_handle wma,
 		dat_snr = vdev_stats->vdev_snr.dat_snr;
 		WMA_LOGD("%s: get vdev id %d, beancon snr %d, data snr %d",
 			 __func__, vdev_stats->vdev_id, bcn_snr, dat_snr);
-		if ((bcn_snr != WMA_TGT_INVALID_SNR_OLD) &&
-			(bcn_snr != WMA_TGT_INVALID_SNR_NEW))
+		if (bcn_snr != WMA_TGT_INVALID_SNR_OLD)
 			rssi = bcn_snr;
 		else if (dat_snr != WMA_TGT_INVALID_SNR_OLD)
 			rssi = dat_snr;
@@ -2696,11 +2695,9 @@ static void wma_update_vdev_stats(tp_wma_handle wma,
 			 */
 			rssi = wma->first_rssi;
 		} else {
-			if (bcn_snr != WMA_TGT_INVALID_SNR_OLD &&
-				bcn_snr != WMA_TGT_INVALID_SNR_NEW) {
+			if (bcn_snr != WMA_TGT_INVALID_SNR_OLD) {
 				rssi = bcn_snr;
-			} else if (dat_snr != WMA_TGT_INVALID_SNR_OLD &&
-					dat_snr != WMA_TGT_INVALID_SNR_NEW) {
+			} else if (dat_snr != WMA_TGT_INVALID_SNR_OLD) {
 				rssi = dat_snr;
 			}
 
@@ -2857,8 +2854,7 @@ static void wma_update_per_chain_rssi_stats(tp_wma_handle wma,
 		dat_snr = rssi_stats->rssi_avg_data[i];
 		WMA_LOGD("chain %d beacon snr %d data snr %d",
 			i, bcn_snr, dat_snr);
-		if ((dat_snr != WMA_TGT_INVALID_SNR_OLD &&
-			 dat_snr != WMA_TGT_INVALID_SNR_NEW))
+		if (dat_snr != WMA_TGT_INVALID_SNR_OLD)
 			rssi_per_chain_stats->rssi[i] = dat_snr;
 		else if (bcn_snr != WMA_TGT_INVALID_SNR_OLD)
 			rssi_per_chain_stats->rssi[i] = bcn_snr;

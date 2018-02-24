@@ -1646,7 +1646,7 @@ static void mxt_proc_t63_messages(struct mxt_data *data, u8 *msg)
 	/* stylus slots come after touch slots */
 	id = data->num_touchids + (msg[0] - data->T63_reportid_min);
 
-	if (id < 0 || id > (data->num_touchids + data->num_stylusids)) {
+	if (id > (data->num_touchids + data->num_stylusids)) {
 		dev_err(dev, "invalid stylus id %d, max slot is %d\n",
 			id, data->num_stylusids);
 		return;

@@ -6110,7 +6110,7 @@ static eHalStatus sme_QosUpdateParams(v_U8_t sessionId,
 sme_QosWmmUpType sme_QosAcToUp(sme_QosEdcaAcType ac)
 {
    sme_QosWmmUpType up = SME_QOS_WMM_UP_MAX;
-   if(ac >= 0 && ac < SME_QOS_EDCA_AC_MAX)
+   if(ac < SME_QOS_EDCA_AC_MAX)
    {
       up = sme_QosACtoUPMap[ac];
    }
@@ -6130,7 +6130,7 @@ sme_QosWmmUpType sme_QosAcToUp(sme_QosEdcaAcType ac)
 sme_QosEdcaAcType sme_QosUpToAc(sme_QosWmmUpType up)
 {
    sme_QosEdcaAcType ac = SME_QOS_EDCA_AC_MAX;
-   if(up >= 0 && up < SME_QOS_WMM_UP_MAX)
+   if(up < SME_QOS_WMM_UP_MAX)
    {
       ac = sme_QosUPtoACMap[up];
    }

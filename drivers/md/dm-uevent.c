@@ -186,11 +186,6 @@ void dm_path_uevent(enum dm_uevent_type event_type, struct dm_target *ti,
 	struct mapped_device *md = dm_table_get_md(ti->table);
 	struct dm_uevent *event;
 
-	if (event_type >= ARRAY_SIZE(_dm_uevent_type_names)) {
-		DMERR("%s: Invalid event_type %d", __func__, event_type);
-		return;
-	}
-
 	event = dm_build_path_uevent(md, ti,
 				     _dm_uevent_type_names[event_type].action,
 				     _dm_uevent_type_names[event_type].name,

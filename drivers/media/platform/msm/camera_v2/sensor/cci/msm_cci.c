@@ -1555,13 +1555,9 @@ static int32_t msm_cci_release(struct v4l2_subdev *sd)
 
 	rc = msm_camera_enable_vreg(&cci_dev->pdev->dev, cci_dev->cci_vreg,
 		cci_dev->regulator_count, NULL, 0, &cci_dev->cci_reg_ptr[0], 0);
-	if (rc < 0)
-		pr_err("%s:%d cci disable_vreg failed\n", __func__, __LINE__);
 
 	rc = msm_camera_config_vreg(&cci_dev->pdev->dev, cci_dev->cci_vreg,
 		cci_dev->regulator_count, NULL, 0, &cci_dev->cci_reg_ptr[0], 0);
-	if (rc < 0)
-		pr_err("%s:%d cci unconfig_vreg failed\n", __func__, __LINE__);
 
 	if (cci_dev->cci_pinctrl_status) {
 		rc = pinctrl_select_state(cci_dev->cci_pinctrl.pinctrl,

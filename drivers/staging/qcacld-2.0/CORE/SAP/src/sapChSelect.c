@@ -901,9 +901,7 @@ uint32_t sap_weight_channel_noise_floor(ptSapContext sap_ctx,
 
 	if (noise_floor_weight > softap_nf_weight_local)
 		noise_floor_weight = softap_nf_weight_local;
-	else if (noise_floor_weight < 0)
-		noise_floor_weight = 0;
-
+	
 	VOS_TRACE(VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_INFO_HIGH,
 		  "In %s, nf=%d, nfwc=%d, nfwl=%d, nfw=%d",
 		  __func__, channel_stat->noise_floor,

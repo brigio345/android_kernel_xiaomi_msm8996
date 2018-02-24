@@ -1976,16 +1976,11 @@ static int qcrypto_aead_ccm_format_adata(struct qce_req *qreq, uint32_t alen,
 		*(__be16 *)adata = cpu_to_be16(alen);
 		len = 2;
 	} else {
-			if ((alen >= 65280) && (alen <= 0xffffffff)) {
-				*(__be16 *)adata = cpu_to_be16(0xfffe);
-				*(__be32 *)&adata[2] = cpu_to_be32(alen);
-				len = 6;
-		} else {
-				*(__be16 *)adata = cpu_to_be16(0xffff);
-				*(__be32 *)&adata[6] = cpu_to_be32(alen);
-				len = 10;
-		}
+			*(__be16 *)adata = cpu_to_be16(0xfffe);
+			*(__be32 *)&adata[2] = cpu_to_be32(alen);
+			len = 6;
 	}
+	
 	adata += len;
 	qreq->assoclen = ALIGN((alen + len), 16);
 

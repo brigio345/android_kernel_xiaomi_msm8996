@@ -45,9 +45,9 @@ static int msm_camera_get_clk_info_internal(struct device *dev,
 			struct clk ***clk_ptr,
 			size_t *num_clk)
 {
-	int rc = 0;
+	int rc = 0, i = 0;
 	size_t cnt, tmp;
-	uint32_t *rates, i = 0;
+	uint32_t *rates;
 	const char *clk_ctl = NULL;
 	bool clock_cntl_support = false;
 	struct device_node *of_node;

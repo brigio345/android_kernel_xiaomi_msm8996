@@ -3105,9 +3105,6 @@ static int qpnp_mpp_init(struct qpnp_led_data *led)
 
 	val = (led->mpp_cfg->current_setting / LED_MPP_CURRENT_PER_SETTING) - 1;
 
-	if (val < 0)
-		val = 0;
-
 	rc = qpnp_led_masked_write(led, LED_MPP_VIN_CTRL(led->base),
 		LED_MPP_VIN_MASK, led->mpp_cfg->vin_ctrl);
 	if (rc) {

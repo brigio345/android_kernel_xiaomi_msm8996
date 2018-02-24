@@ -5815,7 +5815,6 @@ int wlan_hdd_update_phymode(struct net_device *net, tHalHandle hal,
     }
 #endif
 
-    if (phymode != -EIO) {
         sme_GetConfigParam(hal, &smeconfig);
 
         smeconfig.csrConfig.phyMode = phymode;
@@ -5884,8 +5883,6 @@ int wlan_hdd_update_phymode(struct net_device *net, tHalHandle hal,
         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_WARN, ("New_Phymode= %d "
             "ch_bonding=%d band=%d VHT_ch_width=%u"),
             phymode, chwidth, curr_band, vhtchanwidth);
-
-    }
 
     return 0;
 }
@@ -9268,7 +9265,7 @@ static int __iw_add_tspec(struct net_device *dev,
       return 0;
    }
    tSpec.ts_info.up = params[HDD_WLAN_WMM_PARAM_USER_PRIORITY];
-   if(0 > tSpec.ts_info.up || SME_QOS_WMM_UP_MAX < tSpec.ts_info.up)
+   if(SME_QOS_WMM_UP_MAX < tSpec.ts_info.up)
    {
    hddLog(VOS_TRACE_LEVEL_ERROR,"***ts_info.up out of bounds***");
    return 0;
@@ -10865,8 +10862,7 @@ int iw_set_pno(struct net_device *dev, struct iw_request_info *info,
         vos_mem_free(data);
         return -EINVAL;
   }
-  if (pnoRequest.fast_scan_max_cycles < CFG_PNO_SCAN_TIMER_REPEAT_VALUE_MIN ||
-      pnoRequest.fast_scan_max_cycles > CFG_PNO_SCAN_TIMER_REPEAT_VALUE_MAX) {
+  if (pnoRequest.fast_scan_max_cycles < CFG_PNO_SCAN_TIMER_REPEAT_VALUE_MIN) {
       VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
                 "invalid fast scan max cycles %hhu",
                  pnoRequest.fast_scan_max_cycles);

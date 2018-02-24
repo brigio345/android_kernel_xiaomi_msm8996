@@ -2372,8 +2372,7 @@ static void __ref try_hotplug(struct cluster *data)
 		 * If power aware offlining fails due to power cost info
 		 * being unavaiable fall back to original implementation
 		 */
-		for (i = num_present_cpus() - 1; i >= 0 &&
-						i < num_present_cpus(); i--) {
+		for (i = num_present_cpus() - 1; i < num_present_cpus(); i--) {
 			if (!cpumask_test_cpu(i, data->cpus) ||	!cpu_online(i))
 				continue;
 
@@ -2464,8 +2463,6 @@ static int __ref msm_performance_cpu_callback(struct notifier_block *nfb,
 		return NOTIFY_OK;
 
 	for (i = 0; i < num_clusters; i++) {
-		if (managed_clusters[i]->cpus == NULL)
-			return NOTIFY_OK;
 		if (cpumask_test_cpu(cpu, managed_clusters[i]->cpus)) {
 			i_cl = managed_clusters[i];
 			break;
@@ -2480,8 +2477,6 @@ static int __ref msm_performance_cpu_callback(struct notifier_block *nfb,
 		 * Prevent onlining of a managed CPU if max_cpu criteria is
 		 * already satisfied
 		 */
-		if (i_cl->offlined_cpus == NULL)
-			return NOTIFY_OK;
 		if (i_cl->max_cpu_request <=
 					num_online_managed(i_cl->cpus)) {
 			pr_debug("msm_perf: Prevent CPU%d onlining\n", cpu);
@@ -2491,8 +2486,6 @@ static int __ref msm_performance_cpu_callback(struct notifier_block *nfb,
 		cpumask_clear_cpu(cpu, i_cl->offlined_cpus);
 
 	} else if (action == CPU_DEAD) {
-		if (i_cl->offlined_cpus == NULL)
-			return NOTIFY_OK;
 		if (cpumask_test_cpu(cpu, i_cl->offlined_cpus))
 			return NOTIFY_OK;
 		/*

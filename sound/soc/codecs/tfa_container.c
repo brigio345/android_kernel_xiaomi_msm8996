@@ -790,8 +790,6 @@ enum Tfa98xx_Error tfaRunWriteFilter(Tfa98xx_handle_t dev, nxpTfaContBiquad_t *b
 
 		/* get the target address for the filter on this device */
 		dmem = tfa98xx_filter_mem(dev, bq->aa.index, &address, channel);
-		if (dmem < 0)
-			return Tfa98xx_Error_Bad_Parameter;
 
 		/* send a DSP memory message that targets the devices specific memory for the filter
 		 * msg params: which_mem, start_offset, num_words

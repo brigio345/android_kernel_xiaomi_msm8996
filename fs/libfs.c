@@ -1007,8 +1007,7 @@ int generic_check_addressable(unsigned blocksize_bits, u64 num_blocks)
 	if ((blocksize_bits < 9) || (blocksize_bits > PAGE_CACHE_SHIFT))
 		return -EINVAL;
 
-	if ((last_fs_block > (sector_t)(~0ULL) >> (blocksize_bits - 9)) ||
-	    (last_fs_page > (pgoff_t)(~0ULL))) {
+	if (last_fs_block > (sector_t)(~0ULL) >> (blocksize_bits - 9)) {
 		return -EFBIG;
 	}
 	return 0;

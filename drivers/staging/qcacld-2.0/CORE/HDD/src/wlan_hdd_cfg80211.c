@@ -11386,8 +11386,7 @@ wlan_hdd_add_tx_ptrn(hdd_adapter_t *adapter, hdd_context_t *hdd_ctx,
 	add_req->ucPtrnSize = nla_len(tb[PARAM_IP_PACKET]);
 	hddLog(LOG1, FL("IP packet len: %u"), add_req->ucPtrnSize);
 
-	if (add_req->ucPtrnSize < 0 ||
-		add_req->ucPtrnSize > (PERIODIC_TX_PTRN_MAX_SIZE -
+	if (add_req->ucPtrnSize > (PERIODIC_TX_PTRN_MAX_SIZE -
 					HDD_ETH_HEADER_LEN)) {
 		hddLog(LOGE, FL("Invalid IP packet len: %d"),
 				add_req->ucPtrnSize);

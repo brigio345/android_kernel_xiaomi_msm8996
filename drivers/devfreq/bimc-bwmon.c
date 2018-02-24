@@ -413,11 +413,6 @@ static int bimc_bwmon_driver_probe(struct platform_device *pdev)
 	}
 
 	m->irq = platform_get_irq(pdev, 0);
-	if (m->irq < 0) {
-		dev_err(dev, "Unable to get IRQ number\n");
-		return m->irq;
-	}
-
 	m->hw.of_node = of_parse_phandle(dev->of_node, "qcom,target-dev", 0);
 	if (!m->hw.of_node)
 		return -EINVAL;

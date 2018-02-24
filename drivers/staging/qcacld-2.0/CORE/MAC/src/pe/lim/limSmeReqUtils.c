@@ -840,7 +840,7 @@ limIsSmeScanReqValid(tpAniSirGlobal pMac, tpSirSmeScanReq pScanReq)
             goto end;
         }
     }
-    if ((pScanReq->bssType < 0) || (pScanReq->bssType > eSIR_AUTO_MODE))
+    if (pScanReq->bssType > eSIR_AUTO_MODE)
     {
        limLog(pMac, LOGE, FL("Invalid BSS Type"));
        valid = false;

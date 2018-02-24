@@ -101,43 +101,6 @@ static v_S31_t hdd_TranslateABGRateToMbpsRate(v_U8_t *pFcRate)
     return ( (( ((v_S31_t) *pFcRate) & 0x007f) * 1000000) / 2);
 }
 
-
-static eHalStatus hdd_AddIwStreamEvent(int cmd, int length, char* data, hdd_scan_info_t *pscanInfo, char **last_event, char **current_event )
-{
-    struct iw_event event;
-
-    *last_event = *current_event;
-    vos_mem_zero(&event, sizeof (struct iw_event));
-    event.cmd = cmd;
-    event.u.data.flags = 1;
-    event.u.data.length = length;
-    *current_event = iwe_stream_add_point (pscanInfo->info,*current_event, pscanInfo->end,  &event, data);
-
-    if(*last_event == *current_event)
-    {
-            /* no space to add event */
-        hddLog( LOGE, "%s: no space left to add event", __func__);
-        return -E2BIG; /* Error code, may be E2BIG */
-    }
-
-    return 0;
-}
-
-/**---------------------------------------------------------------------------
-
-  \brief hdd_GetWPARSNIEs() -
-
-   This function extract the WPA/RSN IE from the Bss descriptor IEs fields
-
-  \param  - ieFields - Pointer to the Bss Descriptor IEs.
-              - ie_length - IE Length.
-              - last_event -Points to the last event.
-              - current_event - Points to the
-  \return - 0 for success, non zero for failure
-
-  --------------------------------------------------------------------------*/
-
-
 /* Extract the WPA and/or RSN IEs */
 static eHalStatus hdd_GetWPARSNIEs( v_U8_t *ieFields, v_U16_t ie_length, char **last_event, char **current_event, hdd_scan_info_t *pscanInfo )
 {
@@ -166,19 +129,12 @@ static eHalStatus hdd_GetWPARSNIEs( v_U8_t *ieFields, v_U16_t ie_length, char **
 #ifdef FEATURE_WLAN_WAPI
             case DOT11F_EID_WAPI:
 #endif
-                if(hdd_AddIwStreamEvent( IWEVGENIE,  elen+2, (char*)element, pscanInfo, last_event, current_event ) < 0 )
-                    return -E2BIG;
-                break;
-
-            default:
-                break;
-        }
-
-        /* Next element */
+        
+	/* Next element */
         tie_length -= (2 + elen);
         element += 2 + elen;
+        }
     }
-
     return 0;
 }
 
@@ -361,12 +317,6 @@ static eHalStatus hdd_IndicateScanResult(hdd_scan_info_t *scanInfo, tCsrScanResu
              return -E2BIG;
           }
        }
-
-      if( hdd_GetWPARSNIEs( ( tANI_U8 *) descriptor->ieFields, ie_length, &last_event, &current_event, scanInfo )  < 0    )
-      {
-          hddLog( LOGE, "hdd_IndicateScanResult: no space for SIOCGIWESSID");
-          return -E2BIG;
-      }
 
       last_event = current_event;
       current_pad = current_event + IW_EV_LCP_LEN;
