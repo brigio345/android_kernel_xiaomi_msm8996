@@ -3012,18 +3012,15 @@ void mdss_mdp_pipe_calc_pixel_extn(struct mdss_mdp_pipe *pipe)
 				pipe->scaler.num_ext_pxls_btm[i] -= 1;
 		}
 
-			pipe->scaler.left_rpt[i] =
-				pipe->scaler.num_ext_pxls_left[i];
-
-			pipe->scaler.right_rpt[i] =
-				pipe->scaler.num_ext_pxls_right[i];
-
+		pipe->scaler.left_rpt[i] =
+			pipe->scaler.num_ext_pxls_left[i];
+		pipe->scaler.right_rpt[i] =
+			pipe->scaler.num_ext_pxls_right[i];
 		pipe->scaler.top_rpt[i] =
-				pipe->scaler.num_ext_pxls_top[i];
-			
+			pipe->scaler.num_ext_pxls_top[i];
 		pipe->scaler.btm_rpt[i] =
-				pipe->scaler.num_ext_pxls_btm[i];
-		
+			pipe->scaler.num_ext_pxls_btm[i];
+
 		pr_debug("plane repeat=%d, left=%d, right=%d, top=%d, btm=%d\n",
 				i, pipe->scaler.left_rpt[i],
 				pipe->scaler.right_rpt[i],

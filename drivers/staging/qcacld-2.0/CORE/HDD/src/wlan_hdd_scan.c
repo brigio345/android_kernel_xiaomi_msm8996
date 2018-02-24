@@ -129,11 +129,12 @@ static eHalStatus hdd_GetWPARSNIEs( v_U8_t *ieFields, v_U16_t ie_length, char **
 #ifdef FEATURE_WLAN_WAPI
             case DOT11F_EID_WAPI:
 #endif
-        
+	    default:
+		break;
+	}        
 	/* Next element */
         tie_length -= (2 + elen);
-        element += 2 + elen;
-        }
+        element += 2 + elen;  
     }
     return 0;
 }
