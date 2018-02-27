@@ -65,7 +65,7 @@ static void mhi_msm_fixup(struct pci_dev *pcie_device)
 int mhi_ctxt_init(struct mhi_device_ctxt *mhi_dev_ctxt)
 {
 	int ret_val = 0;
-	u32 j = 0;
+	int j = 0;
 
 	ret_val = mhi_init_device_ctxt(mhi_dev_ctxt);
 	if (ret_val) {

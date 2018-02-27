@@ -5230,7 +5230,7 @@ static void firmware_force_update(struct synaptics_rmi4_data *rmi4_data)
 static int synaptics_rmi4_fwu_init(struct synaptics_rmi4_data *rmi4_data)
 {
 	int retval;
-	char attr_count;
+	int attr_count;
 	struct pdt_properties pdt_props;
 
 	if (fwu) {

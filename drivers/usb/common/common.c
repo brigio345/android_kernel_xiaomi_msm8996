@@ -39,9 +39,6 @@ const char *usb_otg_state_string(enum usb_otg_state state)
 		[OTG_STATE_B_SUSPEND] = "b_suspend",
 	};
 
-	if (state < 0 || state >= ARRAY_SIZE(names))
-		return "UNDEFINED";
-
 	return names[state];
 }
 EXPORT_SYMBOL_GPL(usb_otg_state_string);

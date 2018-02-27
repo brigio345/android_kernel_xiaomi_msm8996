@@ -101,44 +101,6 @@ static v_S31_t hdd_TranslateABGRateToMbpsRate(v_U8_t *pFcRate)
     return ( (( ((v_S31_t) *pFcRate) & 0x007f) * 1000000) / 2);
 }
 
-/* Extract the WPA and/or RSN IEs */
-static eHalStatus hdd_GetWPARSNIEs( v_U8_t *ieFields, v_U16_t ie_length, char **last_event, char **current_event, hdd_scan_info_t *pscanInfo )
-{
-    v_U8_t eid, elen, *element;
-    v_U16_t tie_length=0;
-
-    ENTER();
-
-    element = ieFields;
-    tie_length = ie_length;
-
-    while( tie_length > 2 && element != NULL )
-    {
-        eid = element[0];
-        elen = element[1];
-
-        /*If element length is greater than total remaining ie length,
-         *break the loop*/
-        if ((elen+2) > tie_length)
-           break;
-
-        switch(eid)
-        {
-            case DOT11F_EID_WPA:
-            case DOT11F_EID_RSN:
-#ifdef FEATURE_WLAN_WAPI
-            case DOT11F_EID_WAPI:
-#endif
-	    default:
-		break;
-	}        
-	/* Next element */
-        tie_length -= (2 + elen);
-        element += 2 + elen;  
-    }
-    return 0;
-}
-
 /**---------------------------------------------------------------------------
 
   \brief hdd_IndicateScanResult() -

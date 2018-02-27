@@ -6416,12 +6416,6 @@ static int pp_ad_attenuate_bl(struct mdss_ad_info *ad, u32 bl, u32 *bl_out)
 	u32 shift = 0, ratio_temp = 0;
 	u32 n, lut_interval, bl_att;
 
-	if (ad->init.alpha < 0) {
-		pr_err("Invalid input: backlight = %d, alpha = %d\n", bl,
-			ad->init.alpha);
-		return -EINVAL;
-	}
-
 	if (ad->init.alpha == 0) {
 		pr_debug("alpha = %d, hence no attenuation needed\n",
 			ad->init.alpha);

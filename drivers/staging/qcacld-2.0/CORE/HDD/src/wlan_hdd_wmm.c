@@ -1549,7 +1549,7 @@ VOS_STATUS hdd_wmm_adapter_init( hdd_adapter_t *pAdapter )
    INIT_LIST_HEAD(&pAdapter->hddWmmStatus.wmmContextList);
    mutex_init(&pAdapter->hddWmmStatus.wmmLock);
 
-   for (acType = 0; acType < WLANTL_MAX_AC; acType++)
+   for (acType = 0; acType <= WLANTL_AC_VO; acType++)
    {
       pAcStatus = &pAdapter->hddWmmStatus.wmmAcStatus[acType];
       pAcStatus->wmmAcAccessRequired = VOS_FALSE;
@@ -1583,7 +1583,7 @@ VOS_STATUS hdd_wmm_adapter_clear( hdd_adapter_t *pAdapter )
    WLANTL_ACEnumType acType;
    VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_INFO_LOW,
              "%s: Entered", __func__);
-   for (acType = 0; acType < WLANTL_MAX_AC; acType++)
+   for (acType = 0; acType <= WLANTL_AC_VO; acType++)
    {
       pAcStatus = &pAdapter->hddWmmStatus.wmmAcStatus[acType];
       pAcStatus->wmmAcAccessRequired = VOS_FALSE;

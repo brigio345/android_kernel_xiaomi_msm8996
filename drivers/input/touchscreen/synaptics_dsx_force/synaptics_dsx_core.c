@@ -5115,7 +5115,7 @@ extern unsigned int get_hw_version_major(void);
 static int synaptics_rmi4_probe(struct platform_device *pdev)
 {
 	int retval;
-	char attr_count;
+	int attr_count;
 	struct synaptics_rmi4_data *rmi4_data;
 	const struct synaptics_dsx_hw_interface *hw_if;
 	const struct synaptics_dsx_board_data *bdata;
