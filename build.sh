@@ -11,4 +11,4 @@ export objdir="../out"
 
 make O=$objdir $CONFIG_FILE -j8
 
-make CC="${CLANG_TCHAIN}" O=$objdir -j8 Image.gz-dtb -s | tee ../build_$(date +"%d%m%y").log
+make CC="${CLANG_TCHAIN}" O=$objdir -j8 Image.gz-dtb | tee ../build_$(date +"%d%m%y").log
