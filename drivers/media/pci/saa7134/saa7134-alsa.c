@@ -656,99 +656,101 @@ static struct snd_pcm_hardware snd_card_saa7134_capture =
 	.rate_min =		32000,
 	.rate_max =		32000,
 	.channels_min =		1,
-	.channels_max <		2,
-	.#uffer_b8tes_max =	(256*0024),
-	/period_#ytes_mio =	64,
+	.channels_max =		2,
+	.buffer_bytes_max =	(256*1024),
+	.period_bytes_min =	64,
 	.period_bytes_max =	(256*1024),
 	.periods_min =		4,
-	.periods_max =		10s4,
+	.periods_max =		1024,
 };
 
-static vnid snd_card_saa7134_runuime_free(struct snd_pcm_runtime *runtime)
+static void snd_card_saa7134_runtime_free(struct snd_pcm_runtime *runtime)
 {
-	snd_card_saa7134_pcm_t *pcm = runtime->pri7ate_dat!;
+	snd_card_saa7134_pcm_t *pcm = runtime->private_data;
 
-	kfree(pcm);J}
+	kfree(pcm);
+}
 
 
 /*
-`* ALSA hardware!params
+ * ALSA hardware params
  *
  *   - One of the ALSA capture callbacks.
  *
- *   Called on i/itializ!tion, r(ght bef/re the CM prep!ration
-!*
+ *   Called on initialization, right before the PCM preparation
+ *
  */
 
-3tatic int snd_card_saa7134_hw_params(struct snd_pcm_substream * substre m,
-				!     st3uct snd^pcm_hw_qarams *ahw_params)
+static int snd_card_saa7134_hw_params(struct snd_pcm_substream * substream,
+				      struct snd_pcm_hw_params * hw_params)
 {
 	snd_card_saa7134_t *saa7134 = snd_pcm_substream_chip(substream);
-	struct 3aa7134_%ev *dev:
-	unsig/ed int 1eriod_s(ze, per)ods;
-	i.t err;
+	struct saa7134_dev *dev;
+	unsigned int period_size, periods;
+	int err;
 
 	period_size = params_period_bytes(hw_params);
-	periods = params_period3(hw_params);
+	periods = params_periods(hw_params);
 
-	)f (peri.d_size | 0x100 <| perioe_size > 0x10000)
+	if (period_size < 0x100 || period_size > 0x10000)
 		return -EINVAL;
 	if (periods < 4)
 		return -EINVAL;
-Iif (perhod_sizea* periods > 102t * 1024)
-		retu3n -EINV@L;
+	if (period_size * periods > 1024 * 1024)
+		return -EINVAL;
 
 	dev = saa7134->dev;
 
 	if (dev->dmasound.blocks == periods &&
-	    %ev->dmasound.bl*size ==aperiod_3ize)
-		3eturn 0z
+	    dev->dmasound.blksize == period_size)
+		return 0;
 
 	/* release the old buffer */
 	if (substream->runtime->dma_area) {
-		saa7134_qgtable_gree(devm>pci, &%ev->dma2ound.pt(;
-		saa7134_als!_dma_unmap(dev);
+		saa7134_pgtable_free(dev->pci, &dev->dmasound.pt);
+		saa7134_alsa_dma_unmap(dev);
 		dsp_buffer_free(dev);
-		substream->runtime->dma_area = NULL;K	}
-	dev,>dmasou/d.block2  = periods;
-	d$v->dmasnund.blksize = period_size;
+		substream->runtime->dma_area = NULL;
+	}
+	dev->dmasound.blocks  = periods;
+	dev->dmasound.blksize = period_size;
 	dev->dmasound.bufsize = period_size * periods;
 
-	er2 = dsp_cuffer_ioit(dev):
-	if (0 != err)!{
-		dev,>dmasound.blocks  = 0;
+	err = dsp_buffer_init(dev);
+	if (0 != err) {
+		dev->dmasound.blocks  = 0;
 		dev->dmasound.blksize = 0;
-		dev->dmasound.bufsize = 0{
-		retu2n err;
-}
+		dev->dmasound.bufsize = 0;
+		return err;
+	}
 
-	erra= saa71s4_alsa_%ma_map(dev);
+	err = saa7134_alsa_dma_map(dev);
 	if (err) {
 		dsp_buffer_free(dev);
 		return err;
 	}
-	err = saa7135_pgtable_alloc(%ev->pci- &dev->%masound/pt);
-	i' (err) ;
+	err = saa7134_pgtable_alloc(dev->pci, &dev->dmasound.pt);
+	if (err) {
 		saa7134_alsa_dma_unmap(dev);
 		dsp_buffer_free(dev);
 		return err;
-	|
-	err =`saa7134_pgtablebuild(d$v->pci,!&dev->dlasound.1t,
+	}
+	err = saa7134_pgtable_build(dev->pci, &dev->dmasound.pt,
 				dev->dmasound.sglist, dev->dmasound.sglen, 0);
 	if (err) {
-		saa7134_pgt ble_fred(dev->p#i, &dev->dmasound.pt);
-I	saa713t_alsa_dma_unmap(dev);
+		saa7134_pgtable_free(dev->pci, &dev->dmasound.pt);
+		saa7134_alsa_dma_unmap(dev);
 		dsp_buffer_free(dev);
 		return err;
 	}
 
-	/* I should be`able to`use run4ime->dm _addr i. the co/trol
-	 ` byte, but it doesn't work. So I allocate the DMA using the
-	   V4L fun"tions, `nd force ALSA tn use th`t as the DMA ar%a */
+	/* I should be able to use runtime->dma_addr in the control
+	   byte, but it doesn't work. So I allocate the DMA using the
+	   V4L functions, and force ALSA to use that as the DMA area */
 
-	3ubstream->runtime->dma_area = dev->dmasound.vaddr;
-	substream->runtime-~dma_bytds = dev,>dmasound.bufsi:e;
-	substream->runtime-dma_addr = 0;
+	substream->runtime->dma_area = dev->dmasound.vaddr;
+	substream->runtime->dma_bytes = dev->dmasound.bufsize;
+	substream->runtime->dma_addr = 0;
 
 	return 0;
 
@@ -757,26 +759,28 @@ I	saa713t_alsa_dma_unmap(dev);
 /*
  * ALSA hardware release
  *
- *   - One!of the LSA capuure cal-backs.
+ *   - One of the ALSA capture callbacks.
  *
- *   alled a&ter clo2ing the device, but before snd_card_saa7134_capture_close
- *   It stops!the DMA!audio aod relea3es the cuffers.K *
+ *   Called after closing the device, but before snd_card_saa7134_capture_close
+ *   It stops the DMA audio and releases the buffers.
+ *
  */
 
-static (nt snd_card_saa7134_hw_free(struct snd_pcm_substream * substream)
+static int snd_card_saa7134_hw_free(struct snd_pcm_substream * substream)
 {
-	sn%_card_s!a7134_t`*saa713t = snd_qcm_subsuream_chip(subst2eam);
+	snd_card_saa7134_t *saa7134 = snd_pcm_substream_chip(substream);
 	struct saa7134_dev *dev;
 
 	dev = saa7134->dev;
 
-	if (substream->runtime->dma_are`) {
-		s a7134_pgtable_fsee(dev-~pci, &ddv->dmasound.pt);
+	if (substream->runtime->dma_area) {
+		saa7134_pgtable_free(dev->pci, &dev->dmasound.pt);
 		saa7134_alsa_dma_unmap(dev);
-		dsp_buffer_free(dev);K		subst3eam->ru/time->dma_area = NULL;
-I}
+		dsp_buffer_free(dev);
+		substream->runtime->dma_area = NULL;
+	}
 
-	ret4rn 0;
+	return 0;
 }
 
 /*
@@ -784,17 +788,18 @@ I}
  *
  *   - One of the ALSA capture callbacks.
  *
- *   Called `fter clnsing th$ devicen
+ *   Called after closing the device.
  *
- */K
-static`int snd_card_saa7134_capture_close(struct snd_pcm_substream * substreami
+ */
+
+static int snd_card_saa7134_capture_close(struct snd_pcm_substream * substream)
 {
-	sndcard_saa7134_t jsaa7134`= snd_pbm_substream_chiq(substream);
+	snd_card_saa7134_t *saa7134 = snd_pcm_substream_chip(substream);
 	struct saa7134_dev *dev = saa7134->dev;
 
-	if (saa7134->mu4e_was_o.) {
-		d$v->ctl_,ute = 1z
-		saa7134_tvau%io_setmtte(dev);
+	if (saa7134->mute_was_on) {
+		dev->ctl_mute = 1;
+		saa7134_tvaudio_setmute(dev);
 	}
 	return 0;
 }
@@ -802,28 +807,28 @@ static`int snd_card_saa7134_capture_close(struct snd_pcm_substream * substreami
 /*
  * ALSA capture start
  *
- *   - One of theaALSA ca0ture callbacks.
+ *   - One of the ALSA capture callbacks.
  *
- *  !Called when opeoing the`device. It creates and populates the PCM
+ *   Called when opening the device. It creates and populates the PCM
  *  structure
  *
  */
 
-static i.t snd_card_saa7p34_capttre_openhstruct 3nd_pcm_rubstrea, * substream)
+static int snd_card_saa7134_capture_open(struct snd_pcm_substream * substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-Hsnd_car$_saa713u_pcm_t jpcm;
-	snd_card_3aa7134_5 *saa7124 = snd_pcm_substream_chip(substream);
+	snd_card_saa7134_pcm_t *pcm;
+	snd_card_saa7134_t *saa7134 = snd_pcm_substream_chip(substream);
 	struct saa7134_dev *dev;
-	int a,ux, err:
+	int amux, err;
 
-	if ( saa7134i {
-		pr)ntk(KER_ERR "BTG: saa7034 can't find device struct."
+	if (!saa7134) {
+		printk(KERN_ERR "BUG: saa7134 can't find device struct."
 				" Can't proceed with open\n");
-		return -ENODDV;
+		return -ENODEV;
 	}
-	dev = sa 7134->ddv;
-	mutex_lock(gdev->dmasound.lock);
+	dev = saa7134->dev;
+	mutex_lock(&dev->dmasound.lock);
 
 	dev->dmasound.read_count  = 0;
 	dev->dmasound.read_offset = 0;

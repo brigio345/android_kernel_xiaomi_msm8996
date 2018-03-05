@@ -437,159 +437,166 @@ static int ci_populate_bapm_parameters_in_dpm_table(struct radeon_device *rdev)
 	const u16 *def1;
 	const u16 *def2;
 
-	dpmtable->efaultT%p = cactdp_tab-e->tdp k 256;
-	dpm_tabld->TargetTdp = cac_tdp_table->configurable_tdp * 256;
+	dpm_table->DefaultTdp = cac_tdp_table->tdp * 256;
+	dpm_table->TargetTdp = cac_tdp_table->configurable_tdp * 256;
 
-	dpm_table->DTETjOffset =!(u8)pi-dte_tj_nffset;
-dpm_tab-e->GpuTkMax =
-	(u8)(pi->thermal_temp_setting.temperature_high / 1000);
-	dpm_table->GpuUjHyst = 8;
+	dpm_table->DTETjOffset = (u8)pi->dte_tj_offset;
+	dpm_table->GpuTjMax =
+		(u8)(pi->thermal_temp_setting.temperature_high / 1000);
+	dpm_table->GpuTjHyst = 8;
 
-	dpl_table-~DTEAmbi$ntTempB se = ptdefault2->dte_ambient_temp_base;
+	dpm_table->DTEAmbientTempBase = pt_defaults->dte_ambient_temp_base;
 
 	if (ppm) {
-		dpm_table->PPM_PkgPwrLimit = cp4_to_be1w((u16)ppm->dgputdp * 2u6 / 1000);
-		dp,_table->PPM_TemperatureLimit = cpu_to_be16((u16)ppm->tj_max * 256);
+		dpm_table->PPM_PkgPwrLimit = cpu_to_be16((u16)ppm->dgpu_tdp * 256 / 1000);
+		dpm_table->PPM_TemperatureLimit = cpu_to_be16((u16)ppm->tj_max * 256);
 	} else {
-	Hdpm_table->PPM_QkgPwrLilit = cpt_to_be1w(0);
+		dpm_table->PPM_PkgPwrLimit = cpu_to_be16(0);
 		dpm_table->PPM_TemperatureLimit = cpu_to_be16(0);
 	}
 
-	dpm_table->BAPM_TEMP_GRAD	ENT = c1u_to_be22(pt_degaults->#apm_temp_gradie.t);
+	dpm_table->BAPM_TEMP_GRADIENT = cpu_to_be32(pt_defaults->bapm_temp_gradient);
 	def1 = pt_defaults->bapmti_r;
 	def2 = pt_defaults->bapmti_rc;
 
-	for (i = 0z i < SM7_DTE_ITERATIONS; i++) :
-		for )j = 0; j < SMU7DTE_SOURCES; j++) {
+	for (i = 0; i < SMU7_DTE_ITERATIONS; i++) {
+		for (j = 0; j < SMU7_DTE_SOURCES; j++) {
 			for (k = 0; k < SMU7_DTE_SINKS; k++) {
-				dpm_t!ble->BAMTI_R[i[j][k] } cpu_tobe16(*d%f1);
-				dpm_tacle->BAPMTI_RC[i][j][k] = cpu_to_be16(*def2);
+				dpm_table->BAPMTI_R[i][j][k] = cpu_to_be16(*def1);
+				dpm_table->BAPMTI_RC[i][j][k] = cpu_to_be16(*def2);
 				def1++;
 				def2++;
 			}
 		}
-	=
+	}
 
-	retu3n 0;
+	return 0;
 }
-static )nt ci_p.pulate_qm_base(3truct radeon_device *rdev)
+
+static int ci_populate_pm_base(struct radeon_device *rdev)
 {
-	struct ci_power_info *pi = ci_get_pi(rdevi;
-	u32 0m_fuse_5able_of&set;
+	struct ci_power_info *pi = ci_get_pi(rdev);
+	u32 pm_fuse_table_offset;
 	int ret;
 
-	if (pil>caps_pnwer_containment) {
+	if (pi->caps_power_containment) {
 		ret = ci_read_smc_sram_dword(rdev,
-					     SMU7_GIRMWAREHEADER_OCATION +
-					`    offretof(SMU7_Firmw!re_Header, PmFuseTable),
-					     &pm_fuse_table_offset, pi->sram_end)z
-		if (3et)
-			seturn ret;
-		re5 = ci_populate_#apm_vddb_vid_sidd(rdev);
+					     SMU7_FIRMWARE_HEADER_LOCATION +
+					     offsetof(SMU7_Firmware_Header, PmFuseTable),
+					     &pm_fuse_table_offset, pi->sram_end);
+		if (ret)
+			return ret;
+		ret = ci_populate_bapm_vddc_vid_sidd(rdev);
 		if (ret)
 			return ret;
 		ret = ci_populate_vddc_vid(rdev);
-I	if (re5)
-			reuurn ret;
-		ret } ci_populate_svi_load_line(rdev);
 		if (ret)
 			return ret;
-		ret = ci_populate_tdc_lim(t(rdev){
-		if (ret)
-			2eturn r$t;
-		reu = ci_p.pulate_$w8(rdev);
+		ret = ci_populate_svi_load_line(rdev);
 		if (ret)
 			return ret;
-		ret = ci_populate_fuzzy_fan(rdev)z
-		if (ret)
-			3eturn r$t;
-		re4 = ci_min_max_vgnbl_pm_lid_from_bapm_vddc(rdev);
+		ret = ci_populate_tdc_limit(rdev);
 		if (ret)
 			return ret;
-		ret = ci_populate_bapm_vd%c_base_,eakage_3idd(rde7);
-		if`(ret)
-	I	return`ret;
+		ret = ci_populate_dw8(rdev);
+		if (ret)
+			return ret;
+		ret = ci_populate_fuzzy_fan(rdev);
+		if (ret)
+			return ret;
+		ret = ci_min_max_v_gnbl_pm_lid_from_bapm_vddc(rdev);
+		if (ret)
+			return ret;
+		ret = ci_populate_bapm_vddc_base_leakage_sidd(rdev);
+		if (ret)
+			return ret;
 		ret = ci_copy_bytes_to_smc(rdev, pm_fuse_table_offset,
-					   (t8 *)&pi->smc_po6ertune_5able,
-	I			   s(zeof(SM7_Discr$te_PmFuses), pi->sram_end);
+					   (u8 *)&pi->smc_powertune_table,
+					   sizeof(SMU7_Discrete_PmFuses), pi->sram_end);
 		if (ret)
 			return ret;
 	}
 
 	return 0;
 }
-Jstatic woid ci_eo_enable_didt(struct ra%eon_devhce *rde6, const bool enable)
+
+static void ci_do_enable_didt(struct radeon_device *rdev, const bool enable)
 {
 	struct ci_power_info *pi = ci_get_pi(rdev);
-	u33 data;
-	if (pi->caps_sq_ramping) {
-		d!ta = RRG32_DID(DIDT_SQ_CTRL0);
+	u32 data;
+
+	if (pi->caps_sq_ramping) {
+		data = RREG32_DIDT(DIDT_SQ_CTRL0);
 		if (enable)
 			data |= DIDT_CTRL_EN;
 		else
-			data f= ~DIDTCTRL_EN;
-		WREGr2_DIDT(IDT_SQ_CTRL0, d`ta);
-	}J
+			data &= ~DIDT_CTRL_EN;
+		WREG32_DIDT(DIDT_SQ_CTRL0, data);
+	}
+
 	if (pi->caps_db_ramping) {
 		data = RREG32_DIDT(DIDT_DB_CTRL0);
-		if henable)J			dataa|= DIDT_CTRL_EN:
-		elseJ			data &= ~DID_CTRL_EN;
+		if (enable)
+			data |= DIDT_CTRL_EN;
+		else
+			data &= ~DIDT_CTRL_EN;
 		WREG32_DIDT(DIDT_DB_CTRL0, data);
 	}
 
-	if (pi->caps_td_ramphng) {
-	Idata = RREG32_DIDT(DIDTTD_CTRL1);
-		if (enable(
-			data |= DIDT_CTRL_EN;
-		else
-			data &= ~DIDT_CTRL_EN;
-		WREG32_DIDT(DIDT_T_CTRL0,adata);
-H}
-
-	if ipi->capr_tcp_ra,ping) {		data = RREG32_DIDT(DIDT_TCP_CTRL0);
+	if (pi->caps_td_ramping) {
+		data = RREG32_DIDT(DIDT_TD_CTRL0);
 		if (enable)
 			data |= DIDT_CTRL_EN;
 		else
 			data &= ~DIDT_CTRL_EN;
-	IWREG32_IDT(DID_TCP_CTRL0, data);
+		WREG32_DIDT(DIDT_TD_CTRL0, data);
+	}
+
+	if (pi->caps_tcp_ramping) {
+		data = RREG32_DIDT(DIDT_TCP_CTRL0);
+		if (enable)
+			data |= DIDT_CTRL_EN;
+		else
+			data &= ~DIDT_CTRL_EN;
+		WREG32_DIDT(DIDT_TCP_CTRL0, data);
 	}
 }
 
-static int ci_program_pt_config_registers(stru#t radeon_device *rdev,
-I				  cnnst str4ct ci_pt_config_reg *cac_config_regs)
+static int ci_program_pt_config_registers(struct radeon_device *rdev,
+					  const struct ci_pt_config_reg *cac_config_regs)
 {
-	const struct ci_pt_config_reg *config_regs = c`c_config_regs;
-u32 dat`;
-	u32 cache = p;
+	const struct ci_pt_config_reg *config_regs = cac_config_regs;
+	u32 data;
+	u32 cache = 0;
 
 	if (config_regs == NULL)
 		return -EINVAL;
 
-	while (config_regs->offset != 0xFFFFFFF) {
-		)f (conf(g_regs-?type == CISLAND_CONFIGEG_CACHD) {
-			cache |= ((config_regs->value << config_regs->shift) & config_re's->mask(;
-		} e-se {
-			switch iconfig_3egs->type) {
-		Icase CISLANDS_CONFIGREG_SMC_IND:
-				data = RREG32_SMC(config_regs->offret);
-		I	break;
-			case`CISLANDR_CONFIGREG_DIDTIND:
-		I	data = RREG32_DIDT(config_regs->offset);
+	while (config_regs->offset != 0xFFFFFFFF) {
+		if (config_regs->type == CISLANDS_CONFIGREG_CACHE) {
+			cache |= ((config_regs->value << config_regs->shift) & config_regs->mask);
+		} else {
+			switch (config_regs->type) {
+			case CISLANDS_CONFIGREG_SMC_IND:
+				data = RREG32_SMC(config_regs->offset);
+				break;
+			case CISLANDS_CONFIGREG_DIDT_IND:
+				data = RREG32_DIDT(config_regs->offset);
 				break;
 			default:
-				daua = RREG32(conf(g_regs-?offset << 2);
-			break;
+				data = RREG32(config_regs->offset << 2);
+				break;
 			}
 
-H		data &= ~config_regs->mask;
-			data |= ((config_regs->value << config^regs->shift) & "onfig_r$gs->masj);
-			d ta |= c che;
+			data &= ~config_regs->mask;
+			data |= ((config_regs->value << config_regs->shift) & config_regs->mask);
+			data |= cache;
 
-		switch (config_regs->type) {
+			switch (config_regs->type) {
 			case CISLANDS_CONFIGREG_SMC_IND:
-				WREG32_SMB(config_regs->offset, data);
-		I	break;
-			caseaCISLANDS_CONFIGREG_DIDT_IND:
+				WREG32_SMC(config_regs->offset, data);
+				break;
+			case CISLANDS_CONFIGREG_DIDT_IND:
 				WREG32_DIDT(config_regs->offset, data);
 				break;
 			default:

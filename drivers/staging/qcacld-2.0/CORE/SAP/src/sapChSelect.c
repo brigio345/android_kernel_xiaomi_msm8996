@@ -2011,26 +2011,28 @@ void sapComputeSpectWeight( tSapChSelSpectInfo* pSpectInfoParams,
         secondaryChannelOffset = PHY_SINGLE_CHANNEL_CENTERED;
         vhtSupport = 0;
         centerFreq = 0;
-
-	ieLen = GET_IE_LEN_IN_BSS(pScanResult->BssDescriptor.length);
-	vos_mem_set((tANI_U8 *) pBeaconStruct, sizeof(tSirProbeRespBeacon), 0);
-
-	if ((sirParseBeaconIE(pMac, pBeaconStruct,(tANI_U8 *)( pScanResult->BssDescriptor.ieFields), ieLen)) == eSIR_SUCCESS)
+	if (pScanResult->BssDescriptor.ieFields != NULL)
 	{
-	    if (pBeaconStruct->HTCaps.present && pBeaconStruct->HTInfo.present)
-	    {
-	        channelWidth = pBeaconStruct->HTCaps.supportedChannelWidthSet;
-	        secondaryChannelOffset = pBeaconStruct->HTInfo.secondaryChannelOffset;
-	        if(pBeaconStruct->VHTOperation.present)
-	        {
-	            vhtSupport = pBeaconStruct->VHTOperation.present;
-	            if(pBeaconStruct->VHTOperation.chanWidth > WNI_CFG_VHT_CHANNEL_WIDTH_20_40MHZ)
-	            {
-	                channelWidth = eHT_CHANNEL_WIDTH_80MHZ;
-	                centerFreq = pBeaconStruct->VHTOperation.chanCenterFreqSeg1;
-	            }
-	        }
-	    }
+		ieLen = GET_IE_LEN_IN_BSS(pScanResult->BssDescriptor.length);
+		vos_mem_set((tANI_U8 *) pBeaconStruct, sizeof(tSirProbeRespBeacon), 0);
+
+		if ((sirParseBeaconIE(pMac, pBeaconStruct,(tANI_U8 *)( pScanResult->BssDescriptor.ieFields), ieLen)) == eSIR_SUCCESS)
+		{
+		    if (pBeaconStruct->HTCaps.present && pBeaconStruct->HTInfo.present)
+		    {
+		        channelWidth = pBeaconStruct->HTCaps.supportedChannelWidthSet;
+		        secondaryChannelOffset = pBeaconStruct->HTInfo.secondaryChannelOffset;
+		        if(pBeaconStruct->VHTOperation.present)
+		        {
+		            vhtSupport = pBeaconStruct->VHTOperation.present;
+		            if(pBeaconStruct->VHTOperation.chanWidth > WNI_CFG_VHT_CHANNEL_WIDTH_20_40MHZ)
+		            {
+		                channelWidth = eHT_CHANNEL_WIDTH_80MHZ;
+		                centerFreq = pBeaconStruct->VHTOperation.chanCenterFreqSeg1;
+		            }
+		        }
+		    }
+		}
 	}
         // Processing for each tCsrScanResultInfo in the tCsrScanResult DLink list
         for (chn_num = 0; chn_num < pSpectInfoParams->numSpectChans; chn_num++) {
