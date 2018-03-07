@@ -28,9 +28,7 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <trace/events/power.h>
-#ifdef CONFIG_MACH_MSM8996_15801
 #include <soc/qcom/socinfo.h>
-#endif
 
 static DEFINE_MUTEX(l2bw_lock);
 
@@ -318,7 +316,6 @@ static struct cpufreq_driver msm_cpufreq_driver = {
 	.attr		= msm_freq_attr,
 };
 
-#ifdef CONFIG_MACH_MSM8996_15801
 /*
  * Always underclock the power cluster for both MSM8996 and MSM8996pro. There
  * are reproducible crashes with the AnTuTu CPU multithread test when both
@@ -343,7 +340,6 @@ static int __init get_cpu_underclock(char *unused)
 	return 0;
 }
 __setup("no_underclock", get_cpu_underclock);
-#endif
 
 static struct cpufreq_frequency_table *cpufreq_parse_dt(struct device *dev,
 						char *tbl_name, int cpu)
@@ -351,7 +347,6 @@ static struct cpufreq_frequency_table *cpufreq_parse_dt(struct device *dev,
 	int ret, nf, i;
 	u32 *data;
 	struct cpufreq_frequency_table *ftbl;
-#ifdef CONFIG_MACH_MSM8996_15801
 	int underclk_max_perfcl, underclk_max_pwrcl;
 
 	if (socinfo_get_id() == 305) {
@@ -367,7 +362,6 @@ static struct cpufreq_frequency_table *cpufreq_parse_dt(struct device *dev,
 		underclk_max_perfcl = UNDERCLK_MAX_PERFCL_MSM8996;
 		underclk_max_pwrcl = UNDERCLK_MAX_PWRCL_MSM8996;
 	}
-#endif
 
 	/* Parse list of usable CPU frequencies. */
 	if (!of_find_property(dev->of_node, tbl_name, &nf))
@@ -418,7 +412,6 @@ static struct cpufreq_frequency_table *cpufreq_parse_dt(struct device *dev,
 		ftbl[i].driver_data = i;
 		ftbl[i].frequency = f;
 
-#ifdef CONFIG_MACH_MSM8996_15801
 		/* Always underclock power cluster for stability */
 		if (cpu < 2) {
 			if (f == underclk_max_pwrcl) {
@@ -431,7 +424,6 @@ static struct cpufreq_frequency_table *cpufreq_parse_dt(struct device *dev,
 				break;
 			}
 		}
-#endif
 	}
 
 	ftbl[i].driver_data = i;
