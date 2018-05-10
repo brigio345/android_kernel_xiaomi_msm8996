@@ -2939,7 +2939,7 @@ enum Tfa98xx_Error tfaRunWaitCalibration(Tfa98xx_handle_t handle, int *calibrate
 	return err;
 }
 
-enum tfa_error tfa_checkI2SF(Tfa98xx_handle_t handle)
+int tfa_checkI2SF(Tfa98xx_handle_t handle)
 {
 	enum Tfa98xx_Error err = Tfa98xx_Error_Ok;
 
@@ -2964,7 +2964,7 @@ error_exit:
 
 }
 
-enum tfa_error tfa_start(int next_profile, int *vstep)
+int tfa_start(int next_profile, int *vstep)
 {
 	enum Tfa98xx_Error err = Tfa98xx_Error_Ok;
 	int dev, devcount = tfa98xx_cnt_max_device();
@@ -3066,7 +3066,7 @@ error_exit:
 	return err;
 }
 
-enum tfa_error tfa_stop(void)
+int tfa_stop(void)
 {
 	enum Tfa98xx_Error err = Tfa98xx_Error_Ok;
 	int dev, devcount = tfa98xx_cnt_max_device();
@@ -3130,7 +3130,7 @@ int tfa98xx_reset(Tfa98xx_handle_t handle)
 	return err;
 }
 
-enum tfa_error tfa_reset(void)
+int tfa_reset(void)
 {
 	enum Tfa98xx_Error err = Tfa98xx_Error_Ok;
 	int dev, devcount = tfa98xx_cnt_max_device();
