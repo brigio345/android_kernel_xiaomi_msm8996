@@ -1159,18 +1159,18 @@ VosWDThread
       if (test_and_clear_bit(WD_WLAN_DETECT_THREAD_STUCK,
                                    &pWdContext->wdEventFlag)) {
 
-       if (gpVosSchedContext &&
+      if (gpVosSchedContext &&
            !test_bit(MC_SUSPEND_EVENT, &gpVosSchedContext->mcEventFlag))
             vos_wd_detect_thread_stuck();
-       else
-            VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_INFO,
+      else
+           VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_INFO,
                "%s: controller thread %s id: %d is suspended do not attemp probing",
                __func__, current->comm, current->pid);
-        /*
-         * Process here and return without processing any SSR
-         * related logic.
-         */
-        break;
+      /*
+       * Process here and return without processing any SSR
+       * related logic.
+       */
+      break;
       }
       /* Check for any Active Entry Points
        * If active, delay SSR until no entry point is active or
