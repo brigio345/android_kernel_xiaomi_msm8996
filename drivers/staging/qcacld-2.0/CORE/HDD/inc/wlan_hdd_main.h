@@ -1347,6 +1347,10 @@ struct hdd_adapter_s
 #endif /* WLAN_FEATURE_TSF_PLUS */
 #endif
 
+#ifdef WLAN_FEATURE_MOTION_DETECTION
+   uint8_t motion_detection_mode;
+#endif
+
    hdd_cfg80211_state_t cfg80211State;
 
 #ifdef WLAN_FEATURE_PACKET_FILTERING
@@ -1825,6 +1829,7 @@ struct hdd_context_s
 
    v_BOOL_t hdd_wlan_suspended;
    v_BOOL_t suspended;
+   bool prevent_suspend;
 
    spinlock_t filter_lock;
 
